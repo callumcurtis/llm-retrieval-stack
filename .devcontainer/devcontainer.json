@@ -34,6 +34,9 @@
 			"installDockerBuildx": true,
 			"version": "latest",
 			"dockerDashComposeVersion": "v2"
+		},
+		"ghcr.io/devcontainers-contrib/features/terraform-asdf:2": {
+			"version": "latest"
 		}
 	},
 	"mounts": [
@@ -43,7 +46,8 @@
 		"vscode": {
 			"extensions": [
 				"AmazonWebServices.aws-toolkit-vscode",
-				"redhat.vscode-yaml"
+				"redhat.vscode-yaml",
+				"HashiCorp.terraform"
 			]
 		}
 	},
