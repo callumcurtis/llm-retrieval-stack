@@ -10,3 +10,13 @@ variable profile {
 variable openai_api_key {
     type = string
 }
+
+variable lambdas {
+    type = map(object({
+        src_path = string
+        building_path = string
+        filename = string
+        handler = string
+        runtime = string
+    }))
+}

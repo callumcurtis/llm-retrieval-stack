@@ -330,3 +330,7 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+# --- SAM ---
+.aws-sam
+.aws-sam-iacs
