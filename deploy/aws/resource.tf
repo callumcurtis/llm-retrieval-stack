@@ -119,7 +119,7 @@ resource "aws_lambda_permission" "gpt_retrieval_apigw_invoke_get_documents_lambd
   action = "lambda:InvokeFunction"
   function_name = aws_lambda_function.gpt_retrieval_get_documents_lambda.function_name
   principal = "apigateway.amazonaws.com"
-  source_arn = "${aws_api_gateway_rest_api.gpt_retrieval_api.execution_arn}/${aws_api_gateway_stage.gpt_retrieval_api_stage.stage_name}/${aws_api_gateway_method.gpt_retrieval_get_documents_method.http_method}/${aws_api_gateway_resource.gpt_retrieval_get_documents_resource.path_part}"
+  source_arn = "${aws_api_gateway_rest_api.gpt_retrieval_api.execution_arn}/*/${aws_api_gateway_method.gpt_retrieval_get_documents_method.http_method}${aws_api_gateway_resource.gpt_retrieval_get_documents_resource.path}"
 }
 
 resource "aws_api_gateway_resource" "gpt_retrieval_get_documents_resource" {
