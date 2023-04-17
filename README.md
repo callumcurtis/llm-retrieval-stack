@@ -1,4 +1,36 @@
-## LocalStack Deployment:
+## AWS Deployment
+
+Navigate to the deployment directory of your choice:
+
+```bash
+cd deployment/aws
+```
+
+Create a Terraform variables file:
+
+```bash
+cp terraform.tfvars.example terraform.tfvars
+```
+
+Edit the Terraform variables file to provide your credentials and preferences:
+
+```bash
+vi terraform.tfvars
+```
+
+Initialize Terraform:
+
+```bash
+terraform init
+```
+
+Deploy the stack:
+
+```bash
+terraform apply
+```
+
+## LocalStack Deployment
 
 Start LocalStack docker container:
 
@@ -6,13 +38,13 @@ Start LocalStack docker container:
 scripts/start-localstack.sh
 ```
 
-Navigate to the deployment directory of your choice
+Navigate to the deployment directory of your choice:
 
 ```bash
 cd deployment/aws
 ```
 
-Deploy the stack to the LocalStack container
+Deploy the stack to the LocalStack container:
 
 ```bash
 tflocal apply

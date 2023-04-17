@@ -19,4 +19,13 @@ variable lambdas {
         handler = string
         runtime = string
     }))
+    default={
+        get_documents = {
+            src_path = "functions/aws/get_documents/src"
+            building_path = "functions/aws/get_documents/build"
+            filename = "getDocuments.zip"
+            handler = "index.handler"
+            runtime = "python3.9"
+        }
+    }
 }
