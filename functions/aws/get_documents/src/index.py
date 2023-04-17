@@ -1,8 +1,21 @@
 import json
 import os
 
+import boto3
+import aws_secretsmanager_caching as secret_caching
+
 
 S3_DOCUMENTS_BUCKET_NAME = os.environ['S3_DOCUMENTS_BUCKET_NAME']
+
+
+OPENAI_API_KEY_SECRET_NAME = os.environ['OPENAI_API_KEY_SECRET_NAME']
+OPENAI_API_KEY_SECRET_REGION = os.environ['OPENAI_API_KEY_SECRET_REGION']
+client = boto3.client(
+    service_name='secretsmanager',
+    region_name=OPENAI_API_KEY_SECRET_REGION,
+)
+secret_cache_config = secret_caching.SecretCacheConfig()
+secret_cache = secret_caching.SecretCache(config=secret_cache_config, client=client)
 
 
 def handler(event, context):
@@ -31,6 +44,7 @@ def handler(event, context):
         "statusCode": 200,
         "body": json.dumps({
             "message": "hello everyone! this is a test",
-            "S3_DOCUMENTS_BUCKET_NAME": S3_DOCUMENTS_BUCKET_NAME, 
+            "S3_DOCUMENTS_BUCKET_NAME": S3_DOCUMENTS_BUCKET_NAME,
+            "OPENAI_API_KEY": secret_cache.get_secret_string(OPENAI_API_KEY_SECRET_NAME),
         }),
     }

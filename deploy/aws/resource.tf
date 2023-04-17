@@ -60,7 +60,7 @@ resource "aws_lambda_function" "gpt_retrieval_get_documents_lambda" {
   environment {
     variables = {
       OPENAI_API_KEY_SECRET_NAME = aws_secretsmanager_secret.gpt_retrieval_openai_api_key.name
-      OPENAI_API_KEY_REGION_NAME = var.region
+      OPENAI_API_KEY_SECRET_REGION = var.region
       S3_DOCUMENTS_BUCKET_NAME = aws_s3_bucket.gpt_retrieval_documents_bucket.id
     }
   }
@@ -119,6 +119,7 @@ resource "aws_iam_policy" "gpt_retrieval_openai_api_key_access" {
       {
         Action = [
           "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret",
         ]
         Effect = "Allow"
         Resource = [
