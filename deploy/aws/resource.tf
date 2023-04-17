@@ -10,6 +10,41 @@ resource "aws_secretsmanager_secret_version" "gpt_retrieval_openai_api_key_versi
   secret_string = var.openai_api_key
 }
 
+## S3 Documents Bucket
+
+resource "aws_s3_bucket" "gpt_retrieval_documents_bucket" {
+  bucket = "gpt-retrieval-documents-bucket"
+}
+
+## S3 Documents Bucket Access Policy
+
+resource "aws_iam_policy" "gpt_retrieval_documents_bucket_access" {
+  name = "gpt-retrieval-documents-bucket-access"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:ListBucket"
+        ]
+        Effect = "Allow"
+        Resource = [
+          "${aws_s3_bucket.gpt_retrieval_documents_bucket.arn}",
+          "${aws_s3_bucket.gpt_retrieval_documents_bucket.arn}/*",
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "gpt_retrieval_documents_bucket_access_attachment" {
+  role = aws_iam_role.gpt_retrieval_lambda_role.name
+  policy_arn = aws_iam_policy.gpt_retrieval_documents_bucket_access.arn
+}
+
 ## Lambdas
 
 resource "aws_lambda_function" "gpt_retrieval_get_documents_lambda" {
@@ -22,6 +57,13 @@ resource "aws_lambda_function" "gpt_retrieval_get_documents_lambda" {
   depends_on = [
     null_resource.build_get_documents_lambda
   ]
+  environment {
+    variables = {
+      OPENAI_API_KEY_SECRET_NAME = aws_secretsmanager_secret.gpt_retrieval_openai_api_key.name
+      OPENAI_API_KEY_REGION_NAME = var.region
+      S3_DOCUMENTS_BUCKET_NAME = aws_s3_bucket.gpt_retrieval_documents_bucket.id
+    }
+  }
 }
 
 ## SAM-Terraform Integration
@@ -49,7 +91,7 @@ resource "null_resource" "build_get_documents_lambda" {
   }
 }
 
-## IAM
+## IAM Lambda Role
 
 resource "aws_iam_role" "gpt_retrieval_lambda_role" {
   name = "gpt-retrieval-lambda-role"
@@ -66,6 +108,8 @@ resource "aws_iam_role" "gpt_retrieval_lambda_role" {
     ]
   })
 }
+
+## OpenAI API Key Access Policy
 
 resource "aws_iam_policy" "gpt_retrieval_openai_api_key_access" {
   name = "gpt-retrieval-openai-api-key-access"

@@ -1,4 +1,8 @@
 import json
+import os
+
+
+S3_DOCUMENTS_BUCKET_NAME = os.environ['S3_DOCUMENTS_BUCKET_NAME']
 
 
 def handler(event, context):
@@ -27,5 +31,6 @@ def handler(event, context):
         "statusCode": 200,
         "body": json.dumps({
             "message": "hello everyone! this is a test",
+            "S3_DOCUMENTS_BUCKET_NAME": S3_DOCUMENTS_BUCKET_NAME, 
         }),
     }

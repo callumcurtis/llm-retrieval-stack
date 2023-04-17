@@ -57,3 +57,9 @@ curl http://localhost:4566/restapis/<gpt_retrieval_api_id>/local/_user_request_/
 ```
 
 > **_NOTE:_** Replace `<gpt_retrieval_api_id>` with the API ID (output by step 3) and `<resource>` with the desired resource path (ex. `documents`)
+
+Access S3 bucket contents:
+
+```bash
+awslocal s3 ls s3://<bucket-name>/
+```
