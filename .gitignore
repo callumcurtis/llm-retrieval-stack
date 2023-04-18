@@ -334,3 +334,4 @@ terraform.rc
 # --- SAM ---
 .aws-sam
 .aws-sam-iacs
+samconfig.toml

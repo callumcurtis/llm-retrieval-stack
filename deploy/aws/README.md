@@ -1,3 +1,0 @@
-The [`functions`](./functions) directory symlink is used to address https://github.com/aws/aws-sam-cli/issues/4724 which currently makes assets outside of the Terraform directory inaccessible to SAM CLI. This workaround allows the [`functions`](./functions) directory to be located outside of the Terraform directory and still be used by SAM.
-
-TODO: Replace the symlink with relative paths once the issue is resolved.

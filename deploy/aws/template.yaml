@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: GPT Retrieval SAM Template
+
+Parameters:
+  OpenAiApiKey:
+    Type: String
+  ProjectName:
+    Type: String
+    Default: gpt-retrieval
+  FunctionsDirectory:
+    Type: String
+    Default: ../../functions/aws
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 128
+    Runtime: python3.9
+
+Resources:
+  OpenAiApiKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub ${ProjectName}-openai-api-key
+      SecretString: !Ref OpenAiApiKey
+
+  UploadsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${ProjectName}-uploads
+
+  GptRetrievalGetDocumentsLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-get-documents
+      Handler: index.handler
+      CodeUri: !Sub ${FunctionsDirectory}/get_documents/src
+      Environment:
+        Variables:
+          OPENAI_API_KEY_SECRET_NAME: !Ref OpenAiApiKeySecret
+          OPENAI_API_KEY_SECRET_REGION: !Ref AWS::Region
+          S3_DOCUMENTS_BUCKET_NAME: !Ref UploadsBucket
+      Policies:
+        - Statement:
+            - Sid: GptRetrievalGetDocumentsLambdaOpenAiApiKeySecretAccess
+              Action:
+                - secretsmanager:GetSecretValue
+                - secretsmanager:DescribeSecret
+              Effect: Allow
+              Resource: !Ref OpenAiApiKeySecret
+      Events:
+        GetDocuments:
+          Type: Api
+          Properties:
+            Path: /documents
+            Method: get
