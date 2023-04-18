@@ -14,7 +14,7 @@ Parameters:
 
 Globals:
   Function:
-    Timeout: 30
+    Timeout: 5
     MemorySize: 128
     Runtime: python3.9
 
@@ -25,33 +25,36 @@ Resources:
       Name: !Sub ${ProjectName}-openai-api-key
       SecretString: !Ref OpenAiApiKey
 
-  UploadsBucket:
+  UploadBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub ${ProjectName}-uploads
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: []
+            AllowedMethods:
+              - GET
+              - PUT
+              - HEAD
+            AllowedOrigins:
+              # TODO: restrict to the frontend URL
+              - "*"
 
-  GptRetrievalGetDocumentsLambda:
+  GetUploadUrlFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${ProjectName}-get-documents
+      FunctionName: !Sub ${ProjectName}-get-upload-url
       Handler: index.handler
-      CodeUri: !Sub ${FunctionsDirectory}/get_documents/src
+      CodeUri: !Sub ${FunctionsDirectory}/get_upload_url
       Environment:
         Variables:
-          OPENAI_API_KEY_SECRET_NAME: !Ref OpenAiApiKeySecret
-          OPENAI_API_KEY_SECRET_REGION: !Ref AWS::Region
-          S3_DOCUMENTS_BUCKET_NAME: !Ref UploadsBucket
+          UPLOAD_BUCKET: !Ref UploadBucket
       Policies:
-        - Statement:
-            - Sid: GptRetrievalGetDocumentsLambdaOpenAiApiKeySecretAccess
-              Action:
-                - secretsmanager:GetSecretValue
-                - secretsmanager:DescribeSecret
-              Effect: Allow
-              Resource: !Ref OpenAiApiKeySecret
+        - S3WritePolicy:
+            BucketName: !Ref UploadBucket
       Events:
-        GetDocuments:
+        GetUploadUrlApi:
           Type: Api
           Properties:
-            Path: /documents
+            Path: /upload-url
             Method: get
