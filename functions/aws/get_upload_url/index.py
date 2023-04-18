@@ -1,14 +1,13 @@
 import os
-import logging
+import json
 
 import boto3
-from botocore.exceptions import ClientError
 
 
 UPLOAD_BUCKET_NAME = os.environ['UPLOAD_BUCKET']
 
 
-def create_presigned_url(bucket_name, object_name, expiration=120):
+def create_presigned_url(client_method, bucket_name, object_name, expiration=120):
     """Generate a presigned URL to share an S3 object
 
     :param bucket_name: string
@@ -18,28 +17,20 @@ def create_presigned_url(bucket_name, object_name, expiration=120):
     """
 
     s3_client = boto3.client('s3')
-    try:
-        presigned_url = s3_client.generate_presigned_url(
-            'get_object',
-            Params={
-                'Bucket': bucket_name,
-                'Key': object_name
-            },
-            ExpiresIn=expiration
-        )
-    except ClientError as e:
-        logging.error(e)
-        return None
-
-    # The response contains the presigned URL
-    return presigned_url
+    return s3_client.generate_presigned_url(
+        ClientMethod=client_method,
+        Params={
+            'Bucket': bucket_name,
+            'Key': object_name
+        },
+        ExpiresIn=expiration
+    )
 
 
 def handler(event, context):
     return {
         'statusCode': 200,
-        'body': {
-            'UPLOAD_BUCKET': UPLOAD_BUCKET_NAME,
-            'UPLOAD_URL': create_presigned_url(UPLOAD_BUCKET_NAME, event["object_name"])
-        }
+        'body': json.dumps({
+            'uploadUrl': create_presigned_url('put_object', UPLOAD_BUCKET_NAME, event['pathParameters']['objectName'])
+        })
     }

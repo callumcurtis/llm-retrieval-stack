@@ -31,7 +31,8 @@ Resources:
       BucketName: !Sub ${ProjectName}-uploads
       CorsConfiguration:
         CorsRules:
-          - AllowedHeaders: []
+          - AllowedHeaders:
+              - "*"
             AllowedMethods:
               - GET
               - PUT
@@ -56,10 +57,10 @@ Resources:
         GetUploadUrlApi:
           Type: Api
           Properties:
-            Path: /upload-url
+            Path: /uploadUrl/{objectName}
             Method: get
             RestApiId: !Ref ApiGateway
-  
+
   ApiGateway:
     Type: AWS::Serverless::Api
     Properties:
@@ -69,11 +70,30 @@ Resources:
         info:
           title: !Ref ProjectName
         paths:
-          /upload-url:
+          /uploadUrl/{objectName}:
             get:
               parameters:
-                - name: object_name
-                  in: query
+                - name: objectName
+                  in: path
                   required: true
                   type: string
-              responses: {}
+              responses: {
+                "200": {
+                  "description": "Upload URL",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "uploadUrl": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+              x-amazon-apigateway-integration:
+                uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetUploadUrlFunction.Arn}/invocations
+                passthroughBehavior: "when_no_templates"
+                httpMethod: "POST"
+                type: "aws_proxy"
+                requestParameters:
+                  integration.request.path.objectName: "method.request.path.objectName"
