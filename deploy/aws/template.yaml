@@ -58,3 +58,22 @@ Resources:
           Properties:
             Path: /upload-url
             Method: get
+            RestApiId: !Ref ApiGateway
+  
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      DefinitionBody:
+        swagger: '2.0'
+        info:
+          title: !Ref ProjectName
+        paths:
+          /upload-url:
+            get:
+              parameters:
+                - name: object_name
+                  in: query
+                  required: true
+                  type: string
+              responses: {}
