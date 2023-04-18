@@ -4,3 +4,4 @@ matplotlib==3.7.1
 pinecone-client==2.2.1
 awscli-local==0.20
 terraform-local==0.7
+aws-sam-cli-local==1.67.0
