@@ -128,8 +128,6 @@ Resources:
         Variables:
           PROCESS_UPLOADED_OBJECTS_STATE_MACHINE: !GetAtt ProcessUploadedObjectsStateMachine.Arn
       Policies:
-        - S3ReadPolicy:
-            BucketName: !Ref UploadBucket
         - Version: '2012-10-17'
           Statement:
             - Effect: Allow
@@ -171,6 +169,7 @@ Resources:
                 Action:
                   - lambda:InvokeFunction
                 Resource:
+                  - !GetAtt RetrieveObjectFunction.Arn
                   - !GetAtt CreateEmbeddingFunction.Arn
                   - !GetAtt StoreVectorFunction.Arn
 
@@ -180,11 +179,18 @@ Resources:
       StateMachineName: !Sub ${ProjectName}-process-uploaded-objects
       DefinitionString: !Sub |
         {
-          "StartAt": "CreateEmbeddingFunction",
+          "StartAt": "RetrieveObjectFunction",
           "States": {
+            "RetrieveObjectFunction": {
+              "Type": "Task",
+              "Resource": "${RetrieveObjectFunction.Arn}",
+              "ResultPath": "$.objectData",
+              "Next": "CreateEmbeddingFunction"
+            },
             "CreateEmbeddingFunction": {
               "Type": "Task",
               "Resource": "${CreateEmbeddingFunction.Arn}",
+              "ResultPath": "$.vector",
               "Next": "StoreVectorFunction"
             },
             "StoreVectorFunction": {
@@ -195,6 +201,19 @@ Resources:
           }
         }
       RoleArn: !GetAtt ProcessUploadedObjectsStateMachineRole.Arn
+  
+  RetrieveObjectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-retrieve-object
+      Handler: index.handler
+      CodeUri: !Sub ${FunctionsDirectory}/retrieve_object
+      Environment:
+        Variables:
+          UPLOAD_BUCKET: !Ref UploadBucket
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref UploadBucket
 
   CreateEmbeddingFunction:
     Type: AWS::Serverless::Function
