@@ -126,8 +126,6 @@ Resources:
       CodeUri: !Sub ${FunctionsDirectory}/handle_upload_notification
       Environment:
         Variables:
-          UPLOAD_BUCKET: !Ref UploadBucket
-          UPLOAD_NOTIFICATION_QUEUE: !GetAtt UploadNotificationQueue.QueueUrl
           PROCESS_UPLOADED_OBJECTS_STATE_MACHINE: !GetAtt ProcessUploadedObjectsStateMachine.Arn
       Policies:
         - S3ReadPolicy:
