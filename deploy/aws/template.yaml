@@ -33,8 +33,33 @@ Resources:
       Name: !Sub ${ProjectName}-pinecone-api-key
       SecretString: !Ref PineconeApiKey
 
+  UploadNotificationQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProjectName}-upload-notification
+      # To allow time for the downstream Lambda function(s) to process each batch, set to >(lambda timeout * 6)
+      VisibilityTimeout: 300
+
+  UploadNotificationQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref UploadNotificationQueue
+      PolicyDocument:
+        Id: !Sub ${ProjectName}-upload-notification-policy
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: sqs:SendMessage
+            Resource: !GetAtt UploadNotificationQueue.Arn
+            Condition:
+              ArnLike:
+                aws:SourceArn: !Sub arn:aws:s3:::${ProjectName}*
+
   UploadBucket:
     Type: AWS::S3::Bucket
+    DependsOn: UploadNotificationQueuePolicy
     Properties:
       BucketName: !Sub ${ProjectName}-uploads
       CorsConfiguration:
@@ -111,13 +136,6 @@ Resources:
                 requestParameters:
                   integration.request.path.objectKey: "method.request.path.objectKey"
 
-  UploadNotificationQueue:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: !Sub ${ProjectName}-upload-notification
-      # To allow time for the downstream Lambda function(s) to process each batch, set to >(lambda timeout * 6)
-      VisibilityTimeout: 300
-
   HandleUploadNotificationFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -126,7 +144,8 @@ Resources:
       CodeUri: !Sub ${FunctionsDirectory}/handle_upload_notification
       Environment:
         Variables:
-          PROCESS_UPLOADED_OBJECTS_STATE_MACHINE: !GetAtt ProcessUploadedObjectsStateMachine.Arn
+          TEXT_PROCESSING_STATE_MACHINE: !GetAtt TextProcessingStateMachine.Arn
+          UPLOAD_BUCKET: !Ref UploadBucket
       Policies:
         - Version: '2012-10-17'
           Statement:
@@ -135,7 +154,9 @@ Resources:
                 - sqs:ReceiveMessage
                 - sqs:DeleteMessage
                 - sqs:GetQueueAttributes
-              Resource: !GetAtt NotificationsQueue.Arn
+              Resource: !GetAtt UploadNotificationQueue.Arn
+        - S3ReadPolicy:
+            BucketName: !Ref UploadBucket
       Events:
         UploadNotificationQueue:
           Type: SQS
@@ -147,10 +168,10 @@ Resources:
             ScalingConfig:
               MaximumConcurrency: 50
 
-  ProcessUploadedObjectsStateMachineRole:
+  TextProcessingStateMachineRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${ProjectName}-process-uploaded-objects-state-machine
+      RoleName: !Sub ${ProjectName}-text-processing-state-machine
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -161,7 +182,7 @@ Resources:
             Action:
               - sts:AssumeRole
       Policies:
-        - PolicyName: ProcessUploadedObjectsStateMachinePolicy
+        - PolicyName: TextProcessingStateMachinePolicy
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -169,24 +190,17 @@ Resources:
                 Action:
                   - lambda:InvokeFunction
                 Resource:
-                  - !GetAtt RetrieveObjectFunction.Arn
                   - !GetAtt CreateEmbeddingFunction.Arn
                   - !GetAtt StoreVectorFunction.Arn
 
-  ProcessUploadedObjectsStateMachine:
+  TextProcessingStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
-      StateMachineName: !Sub ${ProjectName}-process-uploaded-objects
+      StateMachineName: !Sub ${ProjectName}-process-text
       DefinitionString: !Sub |
         {
-          "StartAt": "RetrieveObjectFunction",
+          "StartAt": "CreateEmbeddingFunction",
           "States": {
-            "RetrieveObjectFunction": {
-              "Type": "Task",
-              "Resource": "${RetrieveObjectFunction.Arn}",
-              "ResultPath": "$.objectData",
-              "Next": "CreateEmbeddingFunction"
-            },
             "CreateEmbeddingFunction": {
               "Type": "Task",
               "Resource": "${CreateEmbeddingFunction.Arn}",
@@ -200,20 +214,7 @@ Resources:
             }
           }
         }
-      RoleArn: !GetAtt ProcessUploadedObjectsStateMachineRole.Arn
-  
-  RetrieveObjectFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${ProjectName}-retrieve-object
-      Handler: index.handler
-      CodeUri: !Sub ${FunctionsDirectory}/retrieve_object
-      Environment:
-        Variables:
-          UPLOAD_BUCKET: !Ref UploadBucket
-      Policies:
-        - S3ReadPolicy:
-            BucketName: !Ref UploadBucket
+      RoleArn: !GetAtt TextProcessingStateMachineRole.Arn
 
   CreateEmbeddingFunction:
     Type: AWS::Serverless::Function

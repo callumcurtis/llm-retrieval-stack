@@ -23,9 +23,8 @@ import json
 
 
 def handler(event, context):
+    text = json.loads(event['text'])
+
     return {
-        "statusCode": 200,
-        "body": json.dumps({
-            "event": event,
-        }),
+        'vector': "fake-vector"
     }
