@@ -7,11 +7,11 @@ import boto3
 UPLOAD_BUCKET_NAME = os.environ['UPLOAD_BUCKET']
 
 
-def create_presigned_url(client_method, bucket_name, object_name, expiration=120):
+def create_presigned_url(client_method, bucket_name, object_key, expiration=120):
     """Generate a presigned URL to share an S3 object
 
     :param bucket_name: string
-    :param object_name: string
+    :param object_key: string
     :param expiration: Time in seconds for the presigned URL to remain valid
     :return: Presigned URL as string. If error, returns None.
     """
@@ -21,7 +21,7 @@ def create_presigned_url(client_method, bucket_name, object_name, expiration=120
         ClientMethod=client_method,
         Params={
             'Bucket': bucket_name,
-            'Key': object_name
+            'Key': object_key
         },
         ExpiresIn=expiration
     )
@@ -31,6 +31,6 @@ def handler(event, context):
     return {
         'statusCode': 200,
         'body': json.dumps({
-            'uploadUrl': create_presigned_url('put_object', UPLOAD_BUCKET_NAME, event['pathParameters']['objectName'])
+            'uploadUrl': create_presigned_url('put_object', UPLOAD_BUCKET_NAME, event['pathParameters']['objectKey'])
         })
     }

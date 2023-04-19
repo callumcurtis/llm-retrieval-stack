@@ -69,7 +69,7 @@ Resources:
         GetUploadUrlApi:
           Type: Api
           Properties:
-            Path: /uploadUrl/{objectName}
+            Path: /uploadUrl/{objectKey}
             Method: get
             RestApiId: !Ref ApiGateway
 
@@ -83,10 +83,10 @@ Resources:
         info:
           title: !Ref ProjectName
         paths:
-          /uploadUrl/{objectName}:
+          /uploadUrl/{objectKey}:
             get:
               parameters:
-                - name: objectName
+                - name: objectKey
                   in: path
                   required: true
                   type: string
@@ -109,7 +109,7 @@ Resources:
                 httpMethod: "POST"
                 type: "aws_proxy"
                 requestParameters:
-                  integration.request.path.objectName: "method.request.path.objectName"
+                  integration.request.path.objectKey: "method.request.path.objectKey"
 
   UploadNotificationQueue:
     Type: AWS::SQS::Queue
