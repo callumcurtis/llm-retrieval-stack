@@ -1,9 +1,11 @@
 AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
-Description: GPT Retrieval SAM Template
+Description: GPT Retrieval
 
 Parameters:
   OpenAiApiKey:
+    Type: String
+  PineconeApiKey:
     Type: String
   ProjectName:
     Type: String
@@ -25,6 +27,12 @@ Resources:
       Name: !Sub ${ProjectName}-openai-api-key
       SecretString: !Ref OpenAiApiKey
 
+  PineconeApiKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub ${ProjectName}-pinecone-api-key
+      SecretString: !Ref PineconeApiKey
+
   UploadBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -40,6 +48,10 @@ Resources:
             AllowedOrigins:
               # TODO: restrict to the frontend URL
               - "*"
+      NotificationConfiguration:
+        QueueConfigurations:
+          - Queue: !GetAtt UploadNotificationQueue.Arn
+            Event: s3:ObjectCreated:*
 
   GetUploadUrlFunction:
     Type: AWS::Serverless::Function
@@ -64,6 +76,7 @@ Resources:
   ApiGateway:
     Type: AWS::Serverless::Api
     Properties:
+      Name: !Sub ${ProjectName}-api
       StageName: Prod
       DefinitionBody:
         swagger: '2.0'
@@ -97,3 +110,111 @@ Resources:
                 type: "aws_proxy"
                 requestParameters:
                   integration.request.path.objectName: "method.request.path.objectName"
+
+  UploadNotificationQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProjectName}-upload-notification
+      # To allow time for the downstream Lambda function(s) to process each batch, set to >(lambda timeout * 6)
+      VisibilityTimeout: 300
+
+  HandleUploadNotificationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-handle-upload-notification
+      Handler: index.handler
+      CodeUri: !Sub ${FunctionsDirectory}/handle_upload_notification
+      Environment:
+        Variables:
+          UPLOAD_BUCKET: !Ref UploadBucket
+          UPLOAD_NOTIFICATION_QUEUE: !GetAtt UploadNotificationQueue.QueueUrl
+          PROCESS_UPLOADED_OBJECTS_STATE_MACHINE: !GetAtt ProcessUploadedObjectsStateMachine.Arn
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref UploadBucket
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - sqs:ReceiveMessage
+                - sqs:DeleteMessage
+                - sqs:GetQueueAttributes
+              Resource: !GetAtt NotificationsQueue.Arn
+      Events:
+        UploadNotificationQueue:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt UploadNotificationQueue.Arn
+            BatchSize: 10
+            # Note: Lambda may wait up to 20 seconds, even if a smaller batch window is specified.
+            MaximumBatchingWindowInSeconds: 10
+            ScalingConfig:
+              MaximumConcurrency: 50
+
+  ProcessUploadedObjectsStateMachineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-process-uploaded-objects-state-machine
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - states.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: ProcessUploadedObjectsStateMachinePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !GetAtt CreateEmbeddingFunction.Arn
+                  - !GetAtt StoreVectorFunction.Arn
+
+  ProcessUploadedObjectsStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: !Sub ${ProjectName}-process-uploaded-objects
+      DefinitionString: !Sub |
+        {
+          "StartAt": "CreateEmbeddingFunction",
+          "States": {
+            "CreateEmbeddingFunction": {
+              "Type": "Task",
+              "Resource": "${CreateEmbeddingFunction.Arn}",
+              "Next": "StoreVectorFunction"
+            },
+            "StoreVectorFunction": {
+              "Type": "Task",
+              "Resource": "${StoreVectorFunction.Arn}",
+              "End": true
+            }
+          }
+        }
+      RoleArn: !GetAtt ProcessUploadedObjectsStateMachineRole.Arn
+
+  CreateEmbeddingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-create-embedding
+      Handler: index.handler
+      CodeUri: !Sub ${FunctionsDirectory}/create_embedding
+      Environment:
+        Variables:
+          OPENAI_API_KEY_SECRET_NAME: !Ref OpenAiApiKeySecret
+          OPENAI_API_KEY_SECRET_REGION: !Ref AWS::Region
+
+  StoreVectorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-store-vector
+      Handler: index.handler
+      CodeUri: !Sub ${FunctionsDirectory}/store_vector
+      Environment:
+        Variables:
+          PINECONE_API_KEY_SECRET: !Ref PineconeApiKeySecret
