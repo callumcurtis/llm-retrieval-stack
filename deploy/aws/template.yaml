@@ -142,6 +142,8 @@ Resources:
       FunctionName: !Sub ${ProjectName}-handle-upload-notification
       Handler: index.handler
       CodeUri: !Sub ${FunctionsDirectory}/handle_upload_notification
+      Layers:
+        - !Sub arn:aws:lambda:${AWS::Region}:017000801446:layer:AWSLambdaPowertoolsPythonV2:30
       Environment:
         Variables:
           TEXT_PROCESSING_STATE_MACHINE: !GetAtt TextProcessingStateMachine.Arn
@@ -157,6 +159,8 @@ Resources:
               Resource: !GetAtt UploadNotificationQueue.Arn
         - S3ReadPolicy:
             BucketName: !Ref UploadBucket
+        - StepFunctionsExecutionPolicy:
+            StateMachineName: !GetAtt TextProcessingStateMachine.Name
       Events:
         UploadNotificationQueue:
           Type: SQS
