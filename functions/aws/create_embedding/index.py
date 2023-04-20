@@ -1,8 +1,8 @@
-import json
 # import os
 
 # import boto3
 # from aws_secretsmanager_caching import SecretCacheConfig, SecretCache
+from aws_lambda_powertools import Logger
 
 
 # OPENAI_API_KEY_SECRET_NAME = os.environ['OPENAI_API_KEY_SECRET_NAME']
@@ -21,9 +21,14 @@ import json
 
 # secret_cache = create_secret_cache()
 
+logger = Logger()
 
+
+@logger.inject_lambda_context()
 def handler(event, context):
-    text = json.loads(event['text'])
+    text = event['text']
+
+    logger.info('Creating embedding for text')
 
     return {
         'vector': "fake-vector"

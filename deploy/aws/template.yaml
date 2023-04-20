@@ -226,6 +226,8 @@ Resources:
       FunctionName: !Sub ${ProjectName}-create-embedding
       Handler: index.handler
       CodeUri: !Sub ${FunctionsDirectory}/create_embedding
+      Layers:
+        - !Sub arn:aws:lambda:${AWS::Region}:017000801446:layer:AWSLambdaPowertoolsPythonV2:30
       Environment:
         Variables:
           OPENAI_API_KEY_SECRET_NAME: !Ref OpenAiApiKeySecret
