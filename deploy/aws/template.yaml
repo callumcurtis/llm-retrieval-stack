@@ -239,6 +239,8 @@ Resources:
       FunctionName: !Sub ${ProjectName}-store-vector
       Handler: index.handler
       CodeUri: !Sub ${FunctionsDirectory}/store_vector
+      Layers:
+        - !Sub arn:aws:lambda:${AWS::Region}:017000801446:layer:AWSLambdaPowertoolsPythonV2:30
       Environment:
         Variables:
           PINECONE_API_KEY_SECRET: !Ref PineconeApiKeySecret
