@@ -1,27 +1,8 @@
-import pytest
-
 from services.utf8 import truncation_point
 
 
-UTF8_CHARS = [
-    b'\x00',
-    b'\x7f',
-    b'\xc2\x80',
-    b'\xdf\xbf',
-    b'\xe0\xa0\x80',
-    b'\xef\xbf\xbf',
-    b'\xf0\x90\x80\x80',
-    b'\xf4\x8f\xbf\xbf',
-]
-
-
-def truncations(data):
-    return [data[:i] for i in range(1, len(data))]
-
-
-@pytest.mark.parametrize('suffix', UTF8_CHARS)
-def test_truncation_point_given_no_truncation(suffix):
-    data = b'Hello, world!' + suffix
+def test_truncation_point_given_no_truncation(utf8_char):
+    data = b'Hello, world!' + utf8_char
     assert truncation_point(data) == len(data)
 
 
@@ -31,13 +12,9 @@ def test_truncation_point_given_invalid_utf8():
     assert truncation_point(data) == len(data)
 
 
-@pytest.mark.parametrize(
-    'suffix',
-    [t for b in UTF8_CHARS for t in truncations(b)]
-)
-def test_truncation_point_given_truncated(suffix):
+def test_truncation_point_given_truncated(utf8_truncation):
     expected = b'Hello, world!'
-    data = expected + suffix 
+    data = expected + utf8_truncation 
     assert data[:truncation_point(data)] == expected
 
 
@@ -46,9 +23,5 @@ def test_truncation_point_given_only_continuation_bytes():
     assert truncation_point(data) == 0
 
 
-@pytest.mark.parametrize(
-    'truncated',
-    [t for b in UTF8_CHARS for t in truncations(b)]
-)
-def test_truncation_point_given_only_truncated(truncated):
-    assert truncation_point(truncated) == 0
+def test_truncation_point_given_only_truncated(utf8_truncation):
+    assert truncation_point(utf8_truncation) == 0
