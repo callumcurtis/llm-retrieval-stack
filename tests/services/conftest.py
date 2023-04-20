@@ -13,8 +13,12 @@ UTF8_CHARS = [
 ]
 
 
-def truncations(char):
+def truncations(char: bytes):
     return (char[:i] for i in range(1, len(char)))
+
+
+def splits(char: bytes):
+    return ((char[:i], char[i:]) for i in range(1, len(char)))
 
 
 @pytest.fixture(params=UTF8_CHARS)
@@ -24,4 +28,9 @@ def utf8_char(request):
 
 @pytest.fixture(params=(t for c in UTF8_CHARS for t in truncations(c)))
 def utf8_truncation(request):
+    return request.param
+
+
+@pytest.fixture(params=(s for c in UTF8_CHARS for s in splits(c)))
+def utf8_split(request):
     return request.param
