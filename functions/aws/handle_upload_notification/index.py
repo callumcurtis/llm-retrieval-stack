@@ -18,12 +18,17 @@ def handler(event, context):
     sqs_records = event['Records']
     for sqs_record in sqs_records:
         sqs_body = json.loads(sqs_record['body'])
-        object_key = sqs_body['Records'][0]['s3']['object']['key']
 
-        logger.info(object_key=object_key)
+        if 'Event' in sqs_body and sqs_body['Event'] == 's3:TestEvent':
+            logger.info('Skipping S3 test event')
+            continue
+
+        object_key = sqs_body['Records'][0]['s3']['object']['key']
 
         object = s3_client.get_object(Bucket=UPLOAD_BUCKET, Key=object_key)
         object_data = object['Body'].read().decode('utf-8')
+
+        logger.info('Dispatching text for processing', objectKey=object_key)
 
         sf_client.start_execution(
             stateMachineArn=TEXT_PROCESSING_STATE_MACHINE,
