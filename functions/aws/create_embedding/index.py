@@ -30,6 +30,4 @@ def handler(event, context):
 
     logger.info('Creating embedding for text')
 
-    return {
-        'vector': "fake-vector"
-    }
+    return "fake-vector"

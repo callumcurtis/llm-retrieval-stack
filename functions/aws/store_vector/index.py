@@ -10,5 +10,3 @@ def handler(event, context):
 
     # TODO: specify which vector database is in use
     logger.info('Storing vector')
-
-    return {}
