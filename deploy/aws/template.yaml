@@ -10,9 +10,9 @@ Parameters:
   ProjectName:
     Type: String
     Default: gpt-retrieval
-  FunctionsDirectory:
+  LambdasDirectory:
     Type: String
-    Default: ../../functions/aws
+    Default: ../../functions/aws/lambdas
 
 Globals:
   Function:
@@ -83,7 +83,7 @@ Resources:
     Properties:
       FunctionName: !Sub ${ProjectName}-get-upload-url
       Handler: index.handler
-      CodeUri: !Sub ${FunctionsDirectory}/get_upload_url
+      CodeUri: !Sub ${LambdasDirectory}/get_upload_url
       Environment:
         Variables:
           UPLOAD_BUCKET: !Ref UploadBucket
@@ -141,7 +141,7 @@ Resources:
     Properties:
       FunctionName: !Sub ${ProjectName}-handle-upload-notification
       Handler: index.handler
-      CodeUri: !Sub ${FunctionsDirectory}/handle_upload_notification
+      CodeUri: !Sub ${LambdasDirectory}/handle_upload_notification
       Layers:
         - !Sub arn:aws:lambda:${AWS::Region}:017000801446:layer:AWSLambdaPowertoolsPythonV2:30
       Environment:
@@ -225,7 +225,7 @@ Resources:
     Properties:
       FunctionName: !Sub ${ProjectName}-create-embedding
       Handler: index.handler
-      CodeUri: !Sub ${FunctionsDirectory}/create_embedding
+      CodeUri: !Sub ${LambdasDirectory}/create_embedding
       Layers:
         - !Sub arn:aws:lambda:${AWS::Region}:017000801446:layer:AWSLambdaPowertoolsPythonV2:30
       Environment:
@@ -238,7 +238,7 @@ Resources:
     Properties:
       FunctionName: !Sub ${ProjectName}-store-vector
       Handler: index.handler
-      CodeUri: !Sub ${FunctionsDirectory}/store_vector
+      CodeUri: !Sub ${LambdasDirectory}/store_vector
       Layers:
         - !Sub arn:aws:lambda:${AWS::Region}:017000801446:layer:AWSLambdaPowertoolsPythonV2:30
       Environment:
