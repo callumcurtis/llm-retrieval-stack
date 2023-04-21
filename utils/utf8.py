@@ -1,3 +1,6 @@
+import itertools
+
+
 MAX_UTF8_BYTES_PER_CHAR = 4
 MAX_UTF8_CONTINUATION_BYTES_PER_CHAR = MAX_UTF8_BYTES_PER_CHAR - 1
 
@@ -8,21 +11,21 @@ UTF8_START_BYTE_MASK_AND_VALUE_BY_LENGTH = {
     4: (0b11111000, 0b11110000),
 }
 
-UTF8_CONTINUATION_BYTE_MASK = 0b11000000
-UTF8_CONTINUATION_BYTE_VALUE = 0b10000000
+
+def is_continuation_byte(byte: int) -> bool:
+    """Check if a byte is a UTF-8 continuation byte."""
+    return byte & 0b11000000 == 0b10000000
+
+
+def leading_continuation_bytes(data: bytes) -> int:
+    """Count the number of UTF-8 continuation bytes at the start of a binary string."""
+    return sum(1 for _ in itertools.takewhile(is_continuation_byte, data))
 
 
 def truncation_point(data: bytes) -> int:
     """Find the point at which a UTF-8 binary string has been truncated."""
 
-    num_continuation_bytes = 0
-    for byte in reversed(data):
-        if byte & UTF8_CONTINUATION_BYTE_MASK == UTF8_CONTINUATION_BYTE_VALUE:
-            num_continuation_bytes += 1
-        else:
-            break
-        if num_continuation_bytes >= MAX_UTF8_CONTINUATION_BYTES_PER_CHAR:
-            break
+    num_continuation_bytes = leading_continuation_bytes(reversed(data))
 
     if num_continuation_bytes == len(data):
         return 0
@@ -35,3 +38,18 @@ def truncation_point(data: bytes) -> int:
         return len(data)
 
     return start_byte_pos
+
+
+def lstrip_continuation_bytes(data: bytes) -> bytes:
+    """Remove leading UTF-8 continuation bytes from a binary string."""
+    return data[leading_continuation_bytes(data):]
+
+
+def rstrip_continuation_bytes(data: bytes) -> bytes:
+    """Remove trailing UTF-8 continuation bytes from a binary string."""
+    return data[:len(data) - leading_continuation_bytes(reversed(data))]
+
+
+def strip_continuation_bytes(data: bytes) -> bytes:
+    """Remove leading and trailing UTF-8 continuation bytes from a binary string."""
+    return rstrip_continuation_bytes(lstrip_continuation_bytes(data))
