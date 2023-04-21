@@ -1,8 +1,8 @@
 import pytest
 
-from services.chunk import decoded_chunk_stream
-from services.chunk import CHARACTER_ENCODING
-from services.chunk import resize_by_num_tokens
+from utils.chunk import decoded_chunk_stream
+from utils.chunk import CHARACTER_ENCODING
+from utils.chunk import resize_by_num_tokens
 
 
 def test_decoded_chunk_stream_given_no_truncations():

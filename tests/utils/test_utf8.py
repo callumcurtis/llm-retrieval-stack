@@ -1,4 +1,4 @@
-from services.utf8 import truncation_point
+from utils.utf8 import truncation_point
 
 
 def test_truncation_point_given_no_truncation(utf8_char):

@@ -1,4 +1,4 @@
-from services.sequence import rindex
+from utils.sequence import rindex
 
 
 def test_rindex_given_empty_sequence():
