@@ -13,6 +13,9 @@ Parameters:
   LambdasDirectory:
     Type: String
     Default: ../../functions/aws/lambdas
+  LayersDirectory:
+    Type: String
+    Default: ../../functions/aws/layers
 
 Globals:
   Function:
@@ -32,6 +35,16 @@ Resources:
     Properties:
       Name: !Sub ${ProjectName}-pinecone-api-key
       SecretString: !Ref PineconeApiKey
+
+  UtilsFunctionLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub ${ProjectName}-utils
+      ContentUri: !Sub ${LayersDirectory}/utils
+      CompatibleRuntimes:
+        - python3.9
+    Metadata:
+      BuildMethod: python3.9
 
   UploadNotificationQueue:
     Type: AWS::SQS::Queue
