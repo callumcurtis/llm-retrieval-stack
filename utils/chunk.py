@@ -12,6 +12,8 @@ DECODED_CHUNK_STREAM = Iterator[str]
 CHARACTER_ENCODING_DEFAULT = 'utf-8'
 TOKEN_ENCODING = 'cl100k_base'
 PREFERRED_CHUNK_DELIMITERS = '.!?\n'
+MIN_TOKENS_PER_CHUNK_DEFAULT = 10
+MAX_TOKENS_PER_CHUNK_DEFAULT = 200
 
 tokenizer = tiktoken.get_encoding(TOKEN_ENCODING)
 
@@ -47,8 +49,8 @@ def decoded_chunk_stream(encoded_chunk_stream: ENCODED_CHUNK_STREAM, encoding = 
 
 def resize_by_num_tokens(
     decoded_chunk_stream: DECODED_CHUNK_STREAM,
-    min_tokens: int,
-    max_tokens: int,
+    min_tokens = MIN_TOKENS_PER_CHUNK_DEFAULT,
+    max_tokens = MAX_TOKENS_PER_CHUNK_DEFAULT,
 ) -> DECODED_CHUNK_STREAM:
     """Resize a stream of decoded chunks to be between a minimum and maximum number of tokens."""
 
