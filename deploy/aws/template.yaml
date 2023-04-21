@@ -157,6 +157,7 @@ Resources:
       CodeUri: !Sub ${LambdasDirectory}/handle_upload_notification
       Layers:
         - !Sub arn:aws:lambda:${AWS::Region}:017000801446:layer:AWSLambdaPowertoolsPythonV2:30
+        - !Ref UtilsFunctionLayer
       Environment:
         Variables:
           TEXT_PROCESSING_STATE_MACHINE: !GetAtt TextProcessingStateMachine.Arn
