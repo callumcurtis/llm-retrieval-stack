@@ -9,14 +9,14 @@ from .sequence import rindex
 ENCODED_CHUNK_STREAM = Iterator[bytes]
 DECODED_CHUNK_STREAM = Iterator[str]
 
-CHARACTER_ENCODING = 'UTF-8'
+CHARACTER_ENCODING_DEFAULT = 'utf-8'
 TOKEN_ENCODING = 'cl100k_base'
 PREFERRED_CHUNK_DELIMITERS = '.!?\n'
 
 tokenizer = tiktoken.get_encoding(TOKEN_ENCODING)
 
 
-def decoded_chunk_stream(encoded_chunk_stream: ENCODED_CHUNK_STREAM) -> DECODED_CHUNK_STREAM:
+def decoded_chunk_stream(encoded_chunk_stream: ENCODED_CHUNK_STREAM, encoding = CHARACTER_ENCODING_DEFAULT) -> DECODED_CHUNK_STREAM:
     """Decode a stream of encoded chunks into a stream of decoded chunks.
 
     The encoded chunks may be truncated, in which case the truncated bytes
@@ -25,6 +25,9 @@ def decoded_chunk_stream(encoded_chunk_stream: ENCODED_CHUNK_STREAM) -> DECODED_
     Raises:
         UnicodeDecodeError: If the encoded chunks cannot be decoded.
     """
+
+    if encoding.lower() != CHARACTER_ENCODING_DEFAULT.lower():
+        raise NotImplementedError(f'Only {CHARACTER_ENCODING_DEFAULT} encoding is supported.')
 
     truncated_bytes = b''
 
@@ -39,7 +42,7 @@ def decoded_chunk_stream(encoded_chunk_stream: ENCODED_CHUNK_STREAM) -> DECODED_
             truncated_bytes = b''
 
         if encoded_chunk:
-            yield encoded_chunk.decode(CHARACTER_ENCODING)
+            yield encoded_chunk.decode(CHARACTER_ENCODING_DEFAULT)
 
 
 def resize_by_num_tokens(

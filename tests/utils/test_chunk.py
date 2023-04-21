@@ -1,33 +1,33 @@
 import pytest
 
 from utils.chunk import decoded_chunk_stream
-from utils.chunk import CHARACTER_ENCODING
+from utils.chunk import CHARACTER_ENCODING_DEFAULT
 from utils.chunk import resize_by_num_tokens
 
 
 def test_decoded_chunk_stream_given_no_truncations():
     encoded_chunk_stream = [b'Hello, world!', b'Foo bar!']
-    assert list(decoded_chunk_stream(encoded_chunk_stream)) == [e.decode(CHARACTER_ENCODING) for e in encoded_chunk_stream]
+    assert list(decoded_chunk_stream(encoded_chunk_stream)) == [e.decode(CHARACTER_ENCODING_DEFAULT) for e in encoded_chunk_stream]
 
 
 def test_decoded_chunk_stream_given_truncation(utf8_split):
     first, second = utf8_split
     encoded_chunk_stream = [b'Hello, world!' + first, second + b'Foo bar!']
-    expected = [e.decode(CHARACTER_ENCODING) for e in (b'Hello, world!', first + second + b'Foo bar!')]
+    expected = [e.decode(CHARACTER_ENCODING_DEFAULT) for e in (b'Hello, world!', first + second + b'Foo bar!')]
     assert list(decoded_chunk_stream(encoded_chunk_stream)) == expected
 
 
 def test_decoded_chunk_stream_given_only_truncation(utf8_split):
     first, second = utf8_split
     encoded_chunk_stream = [first, second]
-    expected = [e.decode(CHARACTER_ENCODING) for e in (first + second,)]
+    expected = [e.decode(CHARACTER_ENCODING_DEFAULT) for e in (first + second,)]
     assert list(decoded_chunk_stream(encoded_chunk_stream)) == expected
 
 
 def test_decoded_chunk_stream_given_multiple_truncations(utf8_split):
     first, second = utf8_split
     encoded_chunk_stream = [first, second, b'Hello' + first, second + b'world!', b'Foo bar!', first]
-    expected = [e.decode(CHARACTER_ENCODING) for e in (first + second, b'Hello', first + second + b'world!', b'Foo bar!')]
+    expected = [e.decode(CHARACTER_ENCODING_DEFAULT) for e in (first + second, b'Hello', first + second + b'world!', b'Foo bar!')]
     assert list(decoded_chunk_stream(encoded_chunk_stream)) == expected
 
 
