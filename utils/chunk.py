@@ -56,13 +56,37 @@ class DecodedChunk:
         return self.text == other.text and self.start == other.start and self.end == other.end
 
     def __repr__(self):
-        return f'DecodedChunk({self.text!r}, {self.start!r}, {self.end!r}, {self.encoding!r})'
+        return f'{self.__class__.__name__}({self.text!r}, {self.start!r}, {self.end!r}, {self.encoding!r})'
 
 
 RawDecodedChunkStream = Iterable[str]
 
 
-class DecodedChunkStream(Iterable[DecodedChunk]):
+class _DecodedChunkStreamInterface(Iterable[DecodedChunk], abc.ABC):
+
+    @abc.abstractmethod
+    def __iter__(self):
+        pass
+
+    @abc.abstractmethod
+    def __repr__(self):
+        pass
+
+    @abc.abstractmethod
+    def append(self, stream: Iterable[DecodedChunk]) -> '_DecodedChunkStreamInterface':
+        pass
+
+    @abc.abstractmethod
+    def append_wrapped(
+        self,
+        raw_stream: '_DecodedChunkStreamInterface',
+        encoding: str,
+        start: Union[int, Iterable[int]] = 0,
+    ) -> '_DecodedChunkStreamInterface':
+        pass
+
+
+class DecodedChunkStream(_DecodedChunkStreamInterface):
     """A stream of decoded chunks."""
 
     def __init__(self):
@@ -72,7 +96,7 @@ class DecodedChunkStream(Iterable[DecodedChunk]):
         return iter(self._stream)
 
     def __repr__(self):
-        return f'DecodedChunkStream({self._stream!r})'
+        return f'{self.__class__.__name__}({self._stream!r})'
 
     def append(self, stream: Iterable[DecodedChunk]) -> 'DecodedChunkStream':
         """Append a stream of decoded chunks to the end of this stream."""
@@ -110,6 +134,36 @@ class DecodedChunkStream(Iterable[DecodedChunk]):
                 end = start + len(raw_decoded_chunk.encode(encoding))
                 yield DecodedChunk(raw_decoded_chunk, start, end, encoding)
                 start = end
+
+
+class DecodedChunkStreamTransformer(_DecodedChunkStreamInterface, abc.ABC):
+    """Decorates a decoded chunk stream to transform it."""
+
+    def __init__(self, stream: _DecodedChunkStreamInterface):
+        self._decoratee = stream
+
+    def __iter__(self):
+        return self._transform(iter(self._decoratee))
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}({self._decoratee!r})'
+
+    def append(self, stream: Iterable[DecodedChunk]) -> _DecodedChunkStreamInterface:
+        self._decoratee.append(stream)
+        return self
+
+    def append_wrapped(
+        self,
+        raw_stream: _DecodedChunkStreamInterface,
+        encoding: str,
+        start: Union[int, Iterable[int]] = 0,
+    ) -> _DecodedChunkStreamInterface:
+        self._decoratee.append_wrapped(raw_stream, encoding, start)
+        return self
+
+    @abc.abstractmethod
+    def _transform(self, stream: Iterable[DecodedChunk]) -> Iterable[DecodedChunk]:
+        raise NotImplementedError
 
 
 class EncodedChunk:
@@ -150,7 +204,7 @@ class EncodedChunk:
         return self.bytes == other.bytes and self.start == other.start and self.end == other.end
 
     def __repr__(self):
-        return f'EncodedChunk({self.bytes!r}, {self.start!r}, {self.end!r}, {self.encoding!r})'
+        return f'{self.__class__.__name__}({self.bytes!r}, {self.start!r}, {self.end!r}, {self.encoding!r})'
 
 
 class EncodedToDecodedChunkStreamConverter(abc.ABC):
@@ -230,7 +284,7 @@ class EncodedChunkStream(Iterable[EncodedChunk]):
         return iter(self._stream)
 
     def __repr__(self):
-        return f'EncodedChunkStream({self._stream!r})'
+        return f'{self.__class__.__name__}({self._stream!r})'
 
     def append(self, stream: Iterable[EncodedChunk]) -> 'EncodedChunkStream':
         """Append a stream of encoded chunks to the end of the stream."""
