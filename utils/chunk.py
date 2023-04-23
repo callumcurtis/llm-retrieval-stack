@@ -239,21 +239,21 @@ class EncodedChunk:
     """An encoded chunk of bytes.
 
     Attributes:
-        bytes: The encoded bytes.
+        data: The encoded bytes.
         start: The start index of the chunk in the original bytes.
         end: The end index of the chunk in the original bytes.
         encoding: The encoding of the bytes.
     """
 
-    def __init__(self, bytes: bytes, start: int, end: int, encoding: str):
-        self._bytes = bytes
+    def __init__(self, data: bytes, start: int, end: int, encoding: str):
+        self._data = data
         self._start = start
         self._end = end
         self._encoding = encoding
 
     @property
-    def bytes(self) -> bytes:
-        return self._bytes
+    def data(self) -> bytes:
+        return self._data
 
     @property
     def start(self) -> int:
@@ -270,10 +270,10 @@ class EncodedChunk:
     def __eq__(self, other):
         if not isinstance(other, EncodedChunk):
             return False
-        return self.bytes == other.bytes and self.start == other.start and self.end == other.end
+        return self.data == other.data and self.start == other.start and self.end == other.end
 
     def __repr__(self):
-        return f'{self.__class__.__name__}({self.bytes!r}, {self.start!r}, {self.end!r}, {self.encoding!r})'
+        return f'{self.__class__.__name__}({self.data!r}, {self.start!r}, {self.end!r}, {self.encoding!r})'
 
 
 class EncodedToDecodedChunkStreamConverter(abc.ABC):
@@ -314,9 +314,9 @@ class EncodedToDecodedChunkStreamConverterWithTruncationHealing(EncodedToDecoded
             if encoded_chunk.start - len(truncated_bytes) != start:
                 truncated_bytes = b''
                 start = encoded_chunk.start
-                encoded_chunk_bytes = lstrip_continuation_bytes(encoded_chunk.bytes)
+                encoded_chunk_bytes = lstrip_continuation_bytes(encoded_chunk.data)
             else:
-                encoded_chunk_bytes = truncated_bytes + encoded_chunk.bytes
+                encoded_chunk_bytes = truncated_bytes + encoded_chunk.data
 
             split = truncation_point(encoded_chunk_bytes)
 
