@@ -1,11 +1,11 @@
 import pytest
 
-from utils.chunk import resize_decoded_chunks_in_stream_by_num_tokens
 from utils.chunk import EncodedChunk
 from utils.chunk import EncodedChunkStream
+from utils.chunk import EncodedToDecodedChunkStreamConverterWithTruncationHealing
 from utils.chunk import DecodedChunk
 from utils.chunk import DecodedChunkStream
-from utils.chunk import EncodedToDecodedChunkStreamConverterWithTruncationHealing
+from utils.chunk import DecodedChunkStreamResizerByNumTokens
 
 
 @pytest.fixture
@@ -13,16 +13,16 @@ def encoded_chunk_stream_default_generator():
     return lambda: EncodedChunkStream()
 
 @pytest.fixture
-def decoded_chunk_stream_default_generator():
-    return lambda: DecodedChunkStream()
-
-@pytest.fixture
-def decoded_chunk_stream_default_generator():
-    return lambda: DecodedChunkStream()
-
-@pytest.fixture
 def encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator():
     return lambda: EncodedToDecodedChunkStreamConverterWithTruncationHealing()
+
+@pytest.fixture
+def decoded_chunk_stream_default_generator():
+    return lambda: DecodedChunkStream()
+
+@pytest.fixture
+def decoded_chunk_stream_default_generator():
+    return lambda: DecodedChunkStream()
 
 
 def test_wrap_raw_encoded_chunk_stream_given_no_chunks(encoded_chunk_stream_default_generator):
@@ -305,12 +305,16 @@ def test_encoded_to_decoded_chunk_stream_with_truncation_healing_given_contiguou
     assert actual == expected
 
 
-def test_resize_decoded_chunks_in_stream_by_num_tokens_given_no_chunks():
-    actual = list(resize_decoded_chunks_in_stream_by_num_tokens([]))
+def test_resize_decoded_chunks_in_stream_by_num_tokens_given_no_chunks(
+    decoded_chunk_stream_default_generator,
+):
+    actual = list(DecodedChunkStreamResizerByNumTokens(decoded_chunk_stream_default_generator()))
     assert actual == []
 
 
-def test_resize_decoded_chunks_in_stream_by_num_tokens_given_contiguous_chunks(decoded_chunk_stream_default_generator):
+def test_resize_decoded_chunks_in_stream_by_num_tokens_given_contiguous_chunks(
+    decoded_chunk_stream_default_generator,
+):
     min_tokens = 15
     max_tokens = 25
     original_text = [
@@ -329,11 +333,13 @@ def test_resize_decoded_chunks_in_stream_by_num_tokens_given_contiguous_chunks(d
         '  It is not   too long.  Maybe   longer than   most',
     ]
     expected = list(decoded_chunk_stream_default_generator().append_wrapped(resized_text, 'utf-8'))
-    actual = list(resize_decoded_chunks_in_stream_by_num_tokens(original_text_stream, min_tokens, max_tokens))
+    actual = list(DecodedChunkStreamResizerByNumTokens(original_text_stream, min_tokens, max_tokens))
     assert actual == expected
 
 
-def test_resize_decoded_chunks_in_stream_by_num_tokens_given_contiguous_and_noncontiguous_chunks(decoded_chunk_stream_default_generator):
+def test_resize_decoded_chunks_in_stream_by_num_tokens_given_contiguous_and_noncontiguous_chunks(
+    decoded_chunk_stream_default_generator,
+):
     encoding = 'utf-8'
     min_tokens = 15
     max_tokens = 25
@@ -365,5 +371,5 @@ def test_resize_decoded_chunks_in_stream_by_num_tokens_given_contiguous_and_nonc
         325,
     ]
     expected = list(decoded_chunk_stream_default_generator().append_wrapped(resized_text, 'utf-8', resized_starts))
-    actual = list(resize_decoded_chunks_in_stream_by_num_tokens(original_text_stream, min_tokens, max_tokens))
+    actual = list(DecodedChunkStreamResizerByNumTokens(original_text_stream, min_tokens, max_tokens))
     assert actual == expected

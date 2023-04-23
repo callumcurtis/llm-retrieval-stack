@@ -5,7 +5,7 @@ import boto3
 from aws_lambda_powertools import Logger
 
 from utils.chunk import EncodedChunkStream
-from utils.chunk import resize_decoded_chunks_in_stream_by_num_tokens
+from utils.chunk import DecodedChunkStreamResizerByNumTokens
 
 
 TEXT_PROCESSING_STATE_MACHINE = os.environ['TEXT_PROCESSING_STATE_MACHINE']
@@ -30,9 +30,11 @@ def handler(event, context):
 
         object_key = sqs_body['Records'][0]['s3']['object']['key']
         object = s3_client.get_object(Bucket=UPLOAD_BUCKET, Key=object_key)
+
         text_stream = object['Body'].iter_chunks(MAX_CHUNK_SIZE_BYTES)
-        text_stream = EncodedChunkStream().append_wrapped(text_stream, encoding='utf-8', start=0).decode()
-        text_stream = resize_decoded_chunks_in_stream_by_num_tokens(text_stream)
+        text_stream = EncodedChunkStream().append_wrapped(text_stream, encoding='utf-8', start=0)
+        text_stream = text_stream.decode()
+        text_stream = DecodedChunkStreamResizerByNumTokens(text_stream)
 
         logger.info('Dispatching text for processing', objectKey=object_key)
 

@@ -143,7 +143,7 @@ class DecodedChunkStreamTransformer(_DecodedChunkStreamInterface, abc.ABC):
         self._decoratee = stream
 
     def __iter__(self):
-        return self._transform(iter(self._decoratee))
+        return self._transformed_iter()
 
     def __repr__(self):
         return f'{self.__class__.__name__}({self._decoratee!r})'
@@ -162,8 +162,77 @@ class DecodedChunkStreamTransformer(_DecodedChunkStreamInterface, abc.ABC):
         return self
 
     @abc.abstractmethod
-    def _transform(self, stream: Iterable[DecodedChunk]) -> Iterable[DecodedChunk]:
+    def _transformed_iter(self) -> Iterable[DecodedChunk]:
         raise NotImplementedError
+
+
+class DecodedChunkStreamResizerByNumTokens(DecodedChunkStreamTransformer):
+    """Resizes a decoded chunk stream to be between a minimum and maximum number of tokens."""
+
+    def __init__(
+        self,
+        stream: _DecodedChunkStreamInterface,
+        min_tokens_per_chunk: int = MIN_TOKENS_PER_CHUNK_DEFAULT,
+        max_tokens_per_chunk: int = MAX_TOKENS_PER_CHUNK_DEFAULT,
+    ):
+        """
+        Args:
+            stream: The stream to resize.
+            min_tokens_per_chunk: The minimum number of tokens per chunk.
+            max_tokens_per_chunk: The maximum number of tokens per chunk.
+        """
+        super().__init__(stream)
+        self._min_tokens_per_chunk = min_tokens_per_chunk
+        self._max_tokens_per_chunk = max_tokens_per_chunk
+    
+    def _transformed_iter(self) -> Iterable[DecodedChunk]:
+        """Resize the stream to be between a minimum and maximum number of tokens.
+
+        The chunks will be resized to be between the minimum and maximum number of tokens,
+        inclusive. If the chunk is too long, it will be split at the last preferred delimiter
+        before the maximum number of tokens. If the chunk is too short, it will be appended
+        to the next chunk, if it is contiguous. Otherwise, it will be discarded.
+        """
+
+        leftover_tokens = []
+        start = 0
+
+        for original_chunk in self._decoratee:
+
+            if original_chunk.start - len(tokenizer.decode(leftover_tokens).encode(original_chunk.encoding)) != start:
+                leftover_tokens = []
+                start = original_chunk.start
+
+            tokens = leftover_tokens + tokenizer.encode(original_chunk.text, disallowed_special=())
+
+            if len(tokens) < self._min_tokens_per_chunk:
+                leftover_tokens = tokens
+                continue
+
+            while len(tokens) >= self._min_tokens_per_chunk:
+                resized_chunk_tokens = tokens[:self._max_tokens_per_chunk]
+                resized_chunk_text = tokenizer.decode(resized_chunk_tokens)
+                tokens = tokens[len(resized_chunk_tokens):]
+
+                preferred_delimiter_index = rindex(resized_chunk_text, PREFERRED_CHUNK_DELIMITERS)
+
+                if preferred_delimiter_index >= 0:
+                    resized_chunk_to_delimiter = resized_chunk_text[:preferred_delimiter_index + 1]
+                    tokens_to_delimiter = len(tokenizer.encode(resized_chunk_to_delimiter, disallowed_special=()))
+                    if tokens_to_delimiter >= self._min_tokens_per_chunk:
+                        resized_chunk_after_delimiter = resized_chunk_text[preferred_delimiter_index + 1:]
+                        resized_chunk_text = resized_chunk_to_delimiter
+                        # Re-encode the remainder of the chunk instead of using
+                        # a slice of resized_chunk_tokens, since the subset encoding
+                        # (used by tokens_to_delimiter) cannot be compared to the
+                        # original encoding (used by resized_chunk_tokens).
+                        tokens = tokenizer.encode(resized_chunk_after_delimiter, disallowed_special=()) + tokens
+
+                end = start + len(resized_chunk_text.encode(original_chunk.encoding))
+                yield DecodedChunk(resized_chunk_text, start, end, original_chunk.encoding)
+                start = end
+
+            leftover_tokens = tokens
 
 
 class EncodedChunk:
@@ -325,57 +394,3 @@ class EncodedChunkStream(Iterable[EncodedChunk]):
 
     def decode(self) -> DecodedChunkStream:
         return self._decoder.decode(self)
-
-
-def resize_decoded_chunks_in_stream_by_num_tokens(
-    decoded_chunk_stream: DecodedChunkStream,
-    min_tokens = MIN_TOKENS_PER_CHUNK_DEFAULT,
-    max_tokens = MAX_TOKENS_PER_CHUNK_DEFAULT,
-) -> DecodedChunkStream:
-    """Resize a stream of decoded chunks to be between a minimum and maximum number of tokens.
-    
-    The chunks will be resized to be between the minimum and maximum number of tokens,
-    inclusive. If the chunk is too long, it will be split at the last preferred delimiter
-    before the maximum number of tokens. If the chunk is too short, it will be appended
-    to the next chunk, if it is contiguous. Otherwise, it will be discarded.
-    """
-
-    leftover_tokens = []
-    start = 0
-
-    for original_chunk in decoded_chunk_stream:
-
-        if original_chunk.start - len(tokenizer.decode(leftover_tokens).encode(original_chunk.encoding)) != start:
-            leftover_tokens = []
-            start = original_chunk.start
-
-        tokens = leftover_tokens + tokenizer.encode(original_chunk.text, disallowed_special=())
-
-        if len(tokens) < min_tokens:
-            leftover_tokens = tokens
-            continue
-
-        while len(tokens) >= min_tokens:
-            resized_chunk_tokens = tokens[:max_tokens]
-            resized_chunk_text = tokenizer.decode(resized_chunk_tokens)
-            tokens = tokens[len(resized_chunk_tokens):]
-
-            preferred_delimiter_index = rindex(resized_chunk_text, PREFERRED_CHUNK_DELIMITERS)
-
-            if preferred_delimiter_index >= 0:
-                resized_chunk_to_delimiter = resized_chunk_text[:preferred_delimiter_index + 1]
-                tokens_to_delimiter = len(tokenizer.encode(resized_chunk_to_delimiter, disallowed_special=()))
-                if tokens_to_delimiter >= min_tokens:
-                    resized_chunk_after_delimiter = resized_chunk_text[preferred_delimiter_index + 1:]
-                    resized_chunk_text = resized_chunk_to_delimiter
-                    # Re-encode the remainder of the chunk instead of using
-                    # a slice of resized_chunk_tokens, since the subset encoding
-                    # (used by tokens_to_delimiter) cannot be compared to the
-                    # original encoding (used by resized_chunk_tokens).
-                    tokens = tokenizer.encode(resized_chunk_after_delimiter, disallowed_special=()) + tokens
-
-            end = start + len(resized_chunk_text.encode(original_chunk.encoding))
-            yield DecodedChunk(resized_chunk_text, start, end, original_chunk.encoding)
-            start = end
-
-        leftover_tokens = tokens
