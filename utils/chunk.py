@@ -1,3 +1,5 @@
+import abc
+import itertools
 from typing import Iterable
 from typing import Union
 
@@ -57,9 +59,62 @@ class DecodedChunk:
         return f'DecodedChunk({self.text!r}, {self.start!r}, {self.end!r}, {self.encoding!r})'
 
 
+RawDecodedChunkStream = Iterable[str]
+
+
+class DecodedChunkStream(Iterable[DecodedChunk]):
+    """A stream of decoded chunks."""
+
+    def __init__(self):
+        self._stream = []
+
+    def __iter__(self):
+        return iter(self._stream)
+
+    def __repr__(self):
+        return f'DecodedChunkStream({self._stream!r})'
+
+    def append(self, stream: Iterable[DecodedChunk]) -> 'DecodedChunkStream':
+        """Append a stream of decoded chunks to the end of this stream."""
+        self._stream = itertools.chain(self._stream, stream)
+        return self
+
+    def append_wrapped(
+        self,
+        raw_stream: RawDecodedChunkStream,
+        encoding: str,
+        start: Union[int, Iterable[int]] = 0,
+    ) -> 'DecodedChunkStream':
+        """Convert a stream of raw decoded chunks to a stream of decoded chunks and append it.
+
+        Args:
+            raw_stream: The stream of raw decoded chunks.
+            encoding: The encoding of the raw decoded chunks.
+            start: The start index of the first chunk in the original bytes.
+        """
+        return self.append(self._wrap(raw_stream, encoding, start))
+
+    def _wrap(
+        self,
+        raw_stream: RawDecodedChunkStream,
+        encoding: str,
+        start: Union[int, Iterable[int]] = 0,
+    ) -> Iterable[DecodedChunk]:
+        if isinstance(start, Iterable):
+            starts = start
+            for raw_decoded_chunk, start in zip(raw_stream, starts):
+                end = start + len(raw_decoded_chunk.encode(encoding))
+                yield DecodedChunk(raw_decoded_chunk, start, end, encoding)
+        else:
+            for raw_decoded_chunk in raw_stream:
+                end = start + len(raw_decoded_chunk.encode(encoding))
+                yield DecodedChunk(raw_decoded_chunk, start, end, encoding)
+                start = end
+
+
 class EncodedChunk:
     """An encoded chunk of bytes.
-    
+
     Attributes:
         bytes: The encoded bytes.
         start: The start index of the chunk in the original bytes.
@@ -84,112 +139,138 @@ class EncodedChunk:
     @property
     def end(self) -> int:
         return self._end
-    
+
     @property
     def encoding(self) -> str:
         return self._encoding
-    
+
     def __eq__(self, other):
         if not isinstance(other, EncodedChunk):
             return False
         return self.bytes == other.bytes and self.start == other.start and self.end == other.end
-    
+
     def __repr__(self):
         return f'EncodedChunk({self.bytes!r}, {self.start!r}, {self.end!r}, {self.encoding!r})'
 
 
+class EncodedToDecodedChunkStreamConverter(abc.ABC):
+
+    @abc.abstractmethod
+    def decode(self, encoded_chunk_stream: 'EncodedChunkStream') -> DecodedChunkStream:
+        """Decode a stream of encoded chunks into a stream of decoded chunks.
+
+        Raises:
+            UnicodeDecodeError: If the encoded chunks cannot be decoded.
+        """
+        raise NotImplementedError
+
+
+class EncodedToDecodedChunkStreamConverterWithTruncationHealing(EncodedToDecodedChunkStreamConverter):
+
+    def decode(self, encoded_chunk_stream: 'EncodedChunkStream') -> DecodedChunkStream:
+        """Decode a stream of encoded chunks into a stream of decoded chunks.
+
+        The encoded chunks may be truncated, in which case the truncated bytes
+        will be prepended to the next chunk, if it is contiguous. Otherwise, the
+        truncated bytes will be discarded.
+
+        Raises:
+            UnicodeDecodeError: If the encoded chunks cannot be decoded.
+        """
+
+        truncated_bytes = b''
+        start = 0
+
+        for encoded_chunk in encoded_chunk_stream:
+
+            encoding = encoded_chunk.encoding
+
+            if encoding.lower() != 'utf-8':
+                raise NotImplementedError(f'Only utf-8 encoding is supported.')
+
+            if encoded_chunk.start - len(truncated_bytes) != start:
+                truncated_bytes = b''
+                start = encoded_chunk.start
+                encoded_chunk_bytes = lstrip_continuation_bytes(encoded_chunk.bytes)
+            else:
+                encoded_chunk_bytes = truncated_bytes + encoded_chunk.bytes
+
+            split = truncation_point(encoded_chunk_bytes)
+
+            if split < len(encoded_chunk_bytes):
+                truncated_bytes = encoded_chunk_bytes[split:]
+                encoded_chunk_bytes = encoded_chunk_bytes[:split]
+            else:
+                truncated_bytes = b''
+
+            if encoded_chunk_bytes:
+                end = start + len(encoded_chunk_bytes)
+                yield DecodedChunk(encoded_chunk_bytes.decode(encoding), start, end, encoding)
+                start = end
+
+
 RawEncodedChunkStream = Iterable[bytes]
-EncodedChunkStream = Iterable[EncodedChunk]
-
-RawDecodedChunkStream = Iterable[str]
-DecodedChunkStream = Iterable[DecodedChunk]
 
 
-def wrap_raw_encoded_chunk_stream(raw_encoded_chunk_stream: RawEncodedChunkStream, encoding: str, start: Union[int, Iterable[int]] = 0) -> EncodedChunkStream:
-    """Wrap a stream of raw encoded chunks into a stream of encoded chunks.
+class EncodedChunkStream(Iterable[EncodedChunk]):
+    """A stream of encoded chunks."""
 
-    Args:
-        raw_encoded_chunk_stream: A stream of raw encoded chunks.
-        encoding: The encoding of the chunks.
-        start: The start index of the first chunk in the original bytes or a stream of start indices, one for each chunk.
-    """
+    def __init__(
+        self,
+        decoder = EncodedToDecodedChunkStreamConverterWithTruncationHealing(),
+    ):
+        """
+        Args:
+            decoder: The decoder to use to decode the encoded chunks.
+        """
+        self._stream = []
+        self._decoder = decoder
 
-    # Note: though similar to wrap_raw_decoded_chunk_stream, the two have not been refactored into a single function
-    # because their similarity is a coincidence and the two may diverge in the future.
+    def __iter__(self):
+        return iter(self._stream)
 
-    if isinstance(start, Iterable):
-        starts = start
-        for raw_encoded_chunk, start in zip(raw_encoded_chunk_stream, starts):
-            end = start + len(raw_encoded_chunk)
-            yield EncodedChunk(raw_encoded_chunk, start, end, encoding)
-    else:
-        for raw_encoded_chunk in raw_encoded_chunk_stream:
-            end = start + len(raw_encoded_chunk)
-            yield EncodedChunk(raw_encoded_chunk, start, end, encoding)
-            start = end
+    def __repr__(self):
+        return f'EncodedChunkStream({self._stream!r})'
 
+    def append(self, stream: Iterable[EncodedChunk]) -> 'EncodedChunkStream':
+        """Append a stream of encoded chunks to the end of the stream."""
+        self._stream = itertools.chain(self._stream, stream)
+        return self
 
-def wrap_raw_decoded_chunk_stream(raw_decoded_chunk_stream: RawDecodedChunkStream, encoding: str, start: Union[int, Iterable[int]] = 0) -> DecodedChunkStream:
-    """Wrap a stream of raw decoded chunks into a stream of decoded chunks.
+    def append_wrapped(
+        self,
+        raw_stream: RawEncodedChunkStream,
+        encoding: str,
+        start: Union[int, Iterable[int]] = 0,
+    ) -> 'EncodedChunkStream':
+        """Convert a stream of raw encoded chunks into a stream of encoded chunks and append it.
+        
+        Args:
+            raw_stream: A stream of raw encoded chunks.
+            encoding: The encoding of the chunks.
+            start: The start index of the first chunk in the original bytes or a stream of start indices, one for each chunk.
+        """
+        return self.append(self._wrap(raw_stream, encoding, start))
 
-    Args:
-        raw_decoded_chunk_stream: A stream of raw decoded chunks.
-        encoding: The encoding of the chunks.
-        start: The start index of the first chunk in the original bytes or a stream of start indices, one for each chunk.
-    """
-
-    if isinstance(start, Iterable):
-        starts = start
-        for raw_decoded_chunk, start in zip(raw_decoded_chunk_stream, starts):
-            end = start + len(raw_decoded_chunk.encode(encoding))
-            yield DecodedChunk(raw_decoded_chunk, start, end, encoding)
-    else:
-        for raw_decoded_chunk in raw_decoded_chunk_stream:
-            end = start + len(raw_decoded_chunk.encode(encoding))
-            yield DecodedChunk(raw_decoded_chunk, start, end, encoding)
-            start = end
-
-
-def encoded_to_decoded_chunk_stream(encoded_chunk_stream: EncodedChunkStream) -> DecodedChunkStream:
-    """Decode a stream of encoded chunks into a stream of decoded chunks.
-
-    The encoded chunks may be truncated, in which case the truncated bytes
-    will be prepended to the next chunk, if it is contiguous. Otherwise, the
-    truncated bytes will be discarded.
-
-    Raises:
-        UnicodeDecodeError: If the encoded chunks cannot be decoded.
-    """
-
-    truncated_bytes = b''
-    start = 0
-
-    for encoded_chunk in encoded_chunk_stream:
-
-        encoding = encoded_chunk.encoding
-
-        if encoding.lower() != 'utf-8':
-            raise NotImplementedError(f'Only utf-8 encoding is supported.')
-
-        if encoded_chunk.start - len(truncated_bytes) != start:
-            truncated_bytes = b''
-            start = encoded_chunk.start
-            encoded_chunk_bytes = lstrip_continuation_bytes(encoded_chunk.bytes)
+    def _wrap(
+        self,
+        raw_stream: RawEncodedChunkStream,
+        encoding: str,
+        start: Union[int, Iterable[int]] = 0,
+    ) -> Iterable[EncodedChunk]:
+        if isinstance(start, Iterable):
+            starts = start
+            for raw_encoded_chunk, start in zip(raw_stream, starts):
+                end = start + len(raw_encoded_chunk)
+                yield EncodedChunk(raw_encoded_chunk, start, end, encoding)
         else:
-            encoded_chunk_bytes = truncated_bytes + encoded_chunk.bytes
+            for raw_encoded_chunk in raw_stream:
+                end = start + len(raw_encoded_chunk)
+                yield EncodedChunk(raw_encoded_chunk, start, end, encoding)
+                start = end
 
-        split = truncation_point(encoded_chunk_bytes)
-
-        if split < len(encoded_chunk_bytes):
-            truncated_bytes = encoded_chunk_bytes[split:]
-            encoded_chunk_bytes = encoded_chunk_bytes[:split]
-        else:
-            truncated_bytes = b''
-
-        if encoded_chunk_bytes:
-            end = start + len(encoded_chunk_bytes)
-            yield DecodedChunk(encoded_chunk_bytes.decode(encoding), start, end, encoding)
-            start = end
+    def decode(self) -> DecodedChunkStream:
+        return self._decoder.decode(self)
 
 
 def resize_decoded_chunks_in_stream_by_num_tokens(
