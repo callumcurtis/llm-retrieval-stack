@@ -5,6 +5,7 @@ import boto3
 from aws_lambda_powertools import Logger
 
 from utils.chunk import EncodedChunkStream
+from utils.chunk import DecodedChunkStreamSplitWordHealer
 from utils.chunk import DecodedChunkStreamResizerByNumTokens
 
 
@@ -34,6 +35,7 @@ def handler(event, context):
         text_stream = object['Body'].iter_chunks(MAX_CHUNK_SIZE_BYTES)
         text_stream = EncodedChunkStream().append_wrapped(text_stream, encoding='utf-8', start=0)
         text_stream = text_stream.decode()
+        text_stream = DecodedChunkStreamSplitWordHealer(text_stream)
         text_stream = DecodedChunkStreamResizerByNumTokens(text_stream)
 
         logger.info('Dispatching text for processing', objectKey=object_key)

@@ -14,6 +14,7 @@ TOKEN_ENCODING = 'cl100k_base'
 PREFERRED_CHUNK_DELIMITERS_DEFAULT = '.!?\n'
 MIN_TOKENS_PER_CHUNK_DEFAULT = 10
 MAX_TOKENS_PER_CHUNK_DEFAULT = 200
+WORD_DELIMITERS_DEFAULT = ' .,;:!?-—\t\n\r\f\v'
 
 tokenizer = tiktoken.get_encoding(TOKEN_ENCODING)
 
@@ -164,6 +165,64 @@ class DecodedChunkStreamTransformer(_DecodedChunkStreamInterface, abc.ABC):
     @abc.abstractmethod
     def _transformed_iter(self) -> Iterable[DecodedChunk]:
         raise NotImplementedError
+
+
+class DecodedChunkStreamSplitWordHealer(DecodedChunkStreamTransformer):
+    """Heals a decoded chunk stream by moving words split across chunks to the next chunk."""
+
+    def __init__(
+        self,
+        stream: _DecodedChunkStreamInterface,
+        word_delimiters: str = WORD_DELIMITERS_DEFAULT,
+    ):
+        """
+        Args:
+            stream: The stream to heal.
+            word_delimiters: The characters that delimit words.
+        """
+        super().__init__(stream)
+        self._word_delimiters = word_delimiters
+
+    def _transformed_iter(self) -> Iterable[DecodedChunk]:
+        """Repair words split across chunks by moving them entirely to the next chunk.
+        
+        If the split cannot be healed due to a missing or noncontiguous chunk, the split is discarded.
+        """
+
+        prefix = ''
+        start = 0
+
+        for chunk in self._decoratee:
+
+            is_contiguous_with_previous_chunk = chunk.start - len(prefix.encode(chunk.encoding)) == start
+
+            if not is_contiguous_with_previous_chunk:
+                prefix = ''
+                start = chunk.start
+
+            chunk_text = prefix + chunk.text
+            last_word_delimiter = index_any(chunk_text, set(self._word_delimiters), reverse=True)
+            missing_prefix = not is_contiguous_with_previous_chunk and start > 0
+
+            if missing_prefix:
+                first_word_delimiter = index_any(chunk_text, set(self._word_delimiters))
+
+            prefix = ''
+            end = chunk.end
+
+            if last_word_delimiter != -1:
+                prefix = chunk_text[last_word_delimiter + 1:]
+                end = chunk.end - len(prefix.encode(chunk.encoding))
+                chunk_text = chunk_text[:last_word_delimiter + 1]
+
+            if missing_prefix and first_word_delimiter > 0:
+                start = chunk.start + first_word_delimiter
+                chunk_text = chunk_text[first_word_delimiter:]
+
+            if chunk_text and not chunk_text.isspace():
+                yield DecodedChunk(chunk_text, start, end, chunk.encoding)
+
+            start = end
 
 
 class DecodedChunkStreamResizerByNumTokens(DecodedChunkStreamTransformer):
