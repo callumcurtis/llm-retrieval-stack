@@ -2,7 +2,7 @@ import pytest
 
 from utils.chunk import EncodedChunk
 from utils.chunk import EncodedChunkStream
-from utils.chunk import EncodedToDecodedChunkStreamConverterWithTruncationHealing
+from utils.chunk import EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing
 from utils.chunk import DecodedChunk
 from utils.chunk import DecodedChunkStream
 from utils.chunk import DecodedChunkStreamResizerByNumTokens
@@ -14,7 +14,7 @@ def encoded_chunk_stream_default_generator():
 
 @pytest.fixture
 def encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator():
-    return lambda: EncodedToDecodedChunkStreamConverterWithTruncationHealing()
+    return lambda: EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing()
 
 @pytest.fixture
 def decoded_chunk_stream_default_generator():

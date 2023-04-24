@@ -288,14 +288,14 @@ class EncodedToDecodedChunkStreamConverter(abc.ABC):
         raise NotImplementedError
 
 
-class EncodedToDecodedChunkStreamConverterWithTruncationHealing(EncodedToDecodedChunkStreamConverter):
+class EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing(EncodedToDecodedChunkStreamConverter):
 
     def decode(self, encoded_chunk_stream: 'EncodedChunkStream') -> DecodedChunkStream:
         """Decode a stream of encoded chunks into a stream of decoded chunks.
 
-        The encoded chunks may be truncated, in which case the truncated bytes
-        will be prepended to the next chunk, if it is contiguous. Otherwise, the
-        truncated bytes will be discarded.
+        The encoded chunks may be split in the middle of a character. This method will
+        attempt to heal the split by prepending the split bytes to the next chunk, if
+        the next chunk is contiguous. Otherwise, the split bytes will be discarded.
 
         Raises:
             UnicodeDecodeError: If the encoded chunks cannot be decoded.
@@ -340,7 +340,7 @@ class EncodedChunkStream(Iterable[EncodedChunk]):
 
     def __init__(
         self,
-        decoder = EncodedToDecodedChunkStreamConverterWithTruncationHealing(),
+        decoder = EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing(),
     ):
         """
         Args:
