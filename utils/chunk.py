@@ -7,7 +7,7 @@ import tiktoken
 
 from .utf8 import truncation_point
 from .utf8 import lstrip_continuation_bytes
-from .sequence import rindex
+from .sequence import index_any
 
 
 TOKEN_ENCODING = 'cl100k_base'
@@ -217,7 +217,7 @@ class DecodedChunkStreamResizerByNumTokens(DecodedChunkStreamTransformer):
                 resized_chunk_text = tokenizer.decode(resized_chunk_tokens)
                 tokens = tokens[len(resized_chunk_tokens):]
 
-                preferred_delimiter_index = rindex(resized_chunk_text, self._preferred_delimiters)
+                preferred_delimiter_index = index_any(resized_chunk_text, self._preferred_delimiters, reverse=True)
 
                 if preferred_delimiter_index >= 0:
                     resized_chunk_to_delimiter = resized_chunk_text[:preferred_delimiter_index + 1]

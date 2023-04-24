@@ -1,7 +1,7 @@
 from collections.abc import Sequence, Collection
 
 
-def rindex(seq: Sequence, items: Collection, start: int = None, end: int = None):
+def index_any(seq: Sequence, items: Collection, start: int = None, end: int = None, reverse: bool = False):
     if not seq or not items:
         return -1
     
@@ -10,9 +10,14 @@ def rindex(seq: Sequence, items: Collection, start: int = None, end: int = None)
     
     if end is None:
         end = len(seq)
-    
-    for i, item in enumerate(reversed(seq[start:end])):
+
+    seq = seq[start:end]
+
+    if reverse:
+        seq = reversed(seq)
+
+    for i, item in enumerate(seq):
         if item in items:
-            return end - i - 1
+            return end - i - 1 if reverse else start + i
 
     return -1
