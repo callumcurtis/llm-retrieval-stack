@@ -11,7 +11,7 @@ from .sequence import rindex
 
 
 TOKEN_ENCODING = 'cl100k_base'
-PREFERRED_CHUNK_DELIMITERS = '.!?\n'
+PREFERRED_CHUNK_DELIMITERS_DEFAULT = '.!?\n'
 MIN_TOKENS_PER_CHUNK_DEFAULT = 10
 MAX_TOKENS_PER_CHUNK_DEFAULT = 200
 
@@ -174,16 +174,19 @@ class DecodedChunkStreamResizerByNumTokens(DecodedChunkStreamTransformer):
         stream: _DecodedChunkStreamInterface,
         min_tokens_per_chunk: int = MIN_TOKENS_PER_CHUNK_DEFAULT,
         max_tokens_per_chunk: int = MAX_TOKENS_PER_CHUNK_DEFAULT,
+        preferred_delimiters: Iterable[str] = PREFERRED_CHUNK_DELIMITERS_DEFAULT,
     ):
         """
         Args:
             stream: The stream to resize.
             min_tokens_per_chunk: The minimum number of tokens per chunk.
             max_tokens_per_chunk: The maximum number of tokens per chunk.
+            preferred_delimiters: The preferred delimiters to split chunks at.
         """
         super().__init__(stream)
         self._min_tokens_per_chunk = min_tokens_per_chunk
         self._max_tokens_per_chunk = max_tokens_per_chunk
+        self._preferred_delimiters = preferred_delimiters
     
     def _transformed_iter(self) -> Iterable[DecodedChunk]:
         """Resize the stream to be between a minimum and maximum number of tokens.
@@ -214,7 +217,7 @@ class DecodedChunkStreamResizerByNumTokens(DecodedChunkStreamTransformer):
                 resized_chunk_text = tokenizer.decode(resized_chunk_tokens)
                 tokens = tokens[len(resized_chunk_tokens):]
 
-                preferred_delimiter_index = rindex(resized_chunk_text, PREFERRED_CHUNK_DELIMITERS)
+                preferred_delimiter_index = rindex(resized_chunk_text, self._preferred_delimiters)
 
                 if preferred_delimiter_index >= 0:
                     resized_chunk_to_delimiter = resized_chunk_text[:preferred_delimiter_index + 1]
