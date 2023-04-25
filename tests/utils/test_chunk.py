@@ -12,10 +12,6 @@ from utils.chunk import DecodedChunkStreamSplitWordHealer
 
 
 @pytest.fixture
-def encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator():
-    return lambda: EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing()
-
-@pytest.fixture
 def decoded_chunk_stream_default_generator():
     return lambda: DecodedChunkStream()
 
@@ -129,15 +125,13 @@ def test_wrap_raw_decoded_chunk_stream_given_start_byte_iterable(decoded_chunk_s
 
 
 def test_encoded_to_decoded_chunk_stream_with_truncation_healing_given_no_chunks(
-    encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator,
 ):
-    actual = list(encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator().decode([]))
+    actual = list(EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing().decode([]))
     assert actual == []
 
 
 def test_encoded_to_decoded_chunk_stream_with_truncation_healing_given_no_truncations(
     decoded_chunk_stream_default_generator,
-    encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator,
 ):
     encoding = 'utf-8'
     raw_encoded_chunk_stream = [b'Hello, world!', b'Foo bar!']
@@ -145,14 +139,13 @@ def test_encoded_to_decoded_chunk_stream_with_truncation_healing_given_no_trunca
     encoded_chunk_stream = EncodedChunkStream().append_wrapped(raw_encoded_chunk_stream, encoding, start)
     raw_decoded_chunk_stream = [chunk.decode(encoding) for chunk in raw_encoded_chunk_stream]
     expected = list(decoded_chunk_stream_default_generator().append_wrapped(raw_decoded_chunk_stream, encoding, start))
-    actual = list(encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator().decode(encoded_chunk_stream))
+    actual = list(EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing().decode(encoded_chunk_stream))
     assert actual == expected
 
 
 def test_encoded_to_decoded_chunk_stream_with_truncation_healing_given_truncation(
     utf8_split,
     decoded_chunk_stream_default_generator,
-    encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator,
 ):
     first, second = utf8_split
     raw_encoded_chunk_stream = [
@@ -166,14 +159,13 @@ def test_encoded_to_decoded_chunk_stream_with_truncation_healing_given_truncatio
         (first + second + b'Foo bar!').decode(encoding),
     ]
     expected = list(decoded_chunk_stream_default_generator().append_wrapped(raw_decoded_chunk_stream, encoding))
-    actual = list(encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator().decode(encoded_chunk_stream))
+    actual = list(EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing().decode(encoded_chunk_stream))
     assert actual == expected
 
 
 def test_encoded_to_decoded_chunk_stream_with_truncation_healing_given_only_truncation(
     utf8_split,
     decoded_chunk_stream_default_generator,
-    encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator,
 ):
     first, second = utf8_split
     encoding = 'utf-8'
@@ -181,14 +173,13 @@ def test_encoded_to_decoded_chunk_stream_with_truncation_healing_given_only_trun
     encoded_chunk_stream = EncodedChunkStream().append_wrapped(raw_encoded_chunk_stream, encoding)
     raw_decode_chunk_stream = [(first + second).decode(encoding)]
     expected = list(decoded_chunk_stream_default_generator().append_wrapped(raw_decode_chunk_stream, encoding))
-    actual = list(encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator().decode(encoded_chunk_stream))
+    actual = list(EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing().decode(encoded_chunk_stream))
     assert actual == expected
 
 
 def test_encoded_to_decoded_chunk_stream_with_truncation_healing_given_multiple_truncations(
     utf8_split,
     decoded_chunk_stream_default_generator,
-    encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator,
 ):
     first, second = utf8_split
     encoding = 'utf-8'
@@ -208,56 +199,47 @@ def test_encoded_to_decoded_chunk_stream_with_truncation_healing_given_multiple_
         'Foo bar!',
     ]
     expected = list(decoded_chunk_stream_default_generator().append_wrapped(raw_decoded_chunk_stream, encoding))
-    actual = list(encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator().decode(encoded_chunk_stream))
+    actual = list(EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing().decode(encoded_chunk_stream))
     assert actual == expected
 
 
-def test_encoded_to_decoded_chunk_stream_with_truncation_healing_given_only_continuation_bytes(
-    encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator,
-):
+def test_encoded_to_decoded_chunk_stream_with_truncation_healing_given_only_continuation_bytes():
     encoding = 'utf-8'
     raw_encoded_chunk_stream = [b'\x80\x80\x80']
     encoded_chunk_stream = EncodedChunkStream().append_wrapped(raw_encoded_chunk_stream, encoding)
     expected = []
-    actual = list(encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator().decode(encoded_chunk_stream))
+    actual = list(EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing().decode(encoded_chunk_stream))
     assert actual == expected
 
 
-def test_encoded_to_decoded_chunk_stream_with_truncation_healing_given_truncated_continuation_bytes(
-    encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator,
-):
+def test_encoded_to_decoded_chunk_stream_with_truncation_healing_given_truncated_continuation_bytes():
     encoding = 'utf-8'
     raw_encoded_chunk_stream = [b'\x80\x80\x80', b'\x80']
     encoded_chunk_stream = EncodedChunkStream().append_wrapped(raw_encoded_chunk_stream, encoding)
     expected = []
-    actual = list(encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator().decode(encoded_chunk_stream))
+    actual = list(EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing().decode(encoded_chunk_stream))
     assert actual == expected
 
 
-def test_encoded_to_decoded_chunk_stream_with_truncation_healing_given_invalid_utf8(
-    encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator,
-):
+def test_encoded_to_decoded_chunk_stream_with_truncation_healing_given_invalid_utf8():
     encoding = 'utf-8'
     raw_encoded_chunk_stream = [b'Hello, \xffworld!']
     encoded_chunk_stream = EncodedChunkStream().append_wrapped(raw_encoded_chunk_stream, encoding)
     with pytest.raises(UnicodeDecodeError):
-        list(encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator().decode(encoded_chunk_stream))
+        list(EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing().decode(encoded_chunk_stream))
 
 
-def test_encoded_to_decoded_chunk_stream_with_truncation_healing_given_truncated_invalid_utf8(
-    encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator,
-):
+def test_encoded_to_decoded_chunk_stream_with_truncation_healing_given_truncated_invalid_utf8():
     encoding = 'utf-8'
     raw_encoded_chunk_stream = [b'Hello, world!\xc3', b'\x28 Foo bar!']
     encoded_chunk_stream = EncodedChunkStream().append_wrapped(raw_encoded_chunk_stream, encoding)
     with pytest.raises(UnicodeDecodeError):
-        list(encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator().decode(encoded_chunk_stream))
+        list(EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing().decode(encoded_chunk_stream))
 
 
 def test_encoded_to_decoded_chunk_stream_with_truncation_healing_given_contiguous_and_noncontiguous_chunks(
     utf8_split,
     decoded_chunk_stream_default_generator,
-    encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator,
 ):
     first, second = utf8_split
     encoding = 'utf-8'
@@ -291,7 +273,7 @@ def test_encoded_to_decoded_chunk_stream_with_truncation_healing_given_contiguou
         0,
     ]
     expected = list(decoded_chunk_stream_default_generator().append_wrapped(raw_decoded_chunk_stream, encoding, decoded_starts))
-    actual = list(encoded_to_decoded_chunk_stream_converter_with_truncation_healing_default_generator().decode(encoded_chunk_stream))
+    actual = list(EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing().decode(encoded_chunk_stream))
     assert actual == expected
 
 
