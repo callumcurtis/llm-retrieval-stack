@@ -5,6 +5,10 @@ scratches/
 
 # --- Python ---
 
+# Line profiling results
+
+*.lprof
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
