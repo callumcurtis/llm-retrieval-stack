@@ -33,7 +33,7 @@ def handler(event, context):
         object = s3_client.get_object(Bucket=UPLOAD_BUCKET, Key=object_key)
 
         text_stream = object['Body'].iter_chunks(MAX_CHUNK_SIZE_BYTES)
-        text_stream = EncodedChunkStream().append_wrapped(text_stream, encoding='utf-8', start=0)
+        text_stream = EncodedChunkStream('utf-8').append_wrapped(text_stream, start=0)
         text_stream = text_stream.decode()
         text_stream = DecodedChunkStreamSplitWordHealer(text_stream)
         text_stream = DecodedChunkStreamResizerByNumTokens(text_stream)
