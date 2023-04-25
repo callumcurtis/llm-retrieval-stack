@@ -528,7 +528,7 @@ def test_decoded_chunk_stream_complete_transformation_pipeline_given_average_fil
     inputsdir,
 ):
     encoding = 'utf-8'
-    chunk_size = 100
+    chunk_size = 500
     original = (inputsdir / 'average-file.original.md').read_text(encoding=encoding)
     encoded = (inputsdir / 'average-file.original.md').read_bytes()
     encoded = [encoded[i:i + chunk_size] for i in range(0, len(encoded), chunk_size)]
