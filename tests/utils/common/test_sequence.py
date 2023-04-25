@@ -1,6 +1,6 @@
 import pytest
 
-from utils.sequence import index_any
+from utils.common.sequence import index_any
 
 
 @pytest.fixture(params=[True, False])

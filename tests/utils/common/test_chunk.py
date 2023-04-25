@@ -2,13 +2,13 @@ import pickle
 
 import pytest
 
-from utils.chunk import EncodedChunk
-from utils.chunk import EncodedChunkStream
-from utils.chunk import EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing
-from utils.chunk import DecodedChunk
-from utils.chunk import DecodedChunkStream
-from utils.chunk import DecodedChunkStreamResizerByNumTokens
-from utils.chunk import DecodedChunkStreamSplitWordHealer
+from utils.common.chunk import EncodedChunk
+from utils.common.chunk import EncodedChunkStream
+from utils.common.chunk import EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing
+from utils.common.chunk import DecodedChunk
+from utils.common.chunk import DecodedChunkStream
+from utils.common.chunk import DecodedChunkStreamResizerByNumTokens
+from utils.common.chunk import DecodedChunkStreamSplitWordHealer
 
 
 def test_wrap_raw_encoded_chunk_stream_given_no_chunks():

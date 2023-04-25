@@ -4,9 +4,9 @@ import os
 import boto3
 from aws_lambda_powertools import Logger
 
-from utils.chunk import EncodedChunkStream
-from utils.chunk import DecodedChunkStreamSplitWordHealer
-from utils.chunk import DecodedChunkStreamResizerByNumTokens
+from utils.common.chunk import EncodedChunkStream
+from utils.common.chunk import DecodedChunkStreamSplitWordHealer
+from utils.common.chunk import DecodedChunkStreamResizerByNumTokens
 
 
 UPLOAD_BUCKET = os.environ['UPLOAD_BUCKET']
