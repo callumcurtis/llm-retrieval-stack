@@ -137,7 +137,9 @@ class DecodedChunkStream(_DecodedChunkStreamInterface):
     ) -> Iterable[DecodedChunk]:
         if isinstance(start, Iterable):
             starts = start
-            for raw_decoded_chunk, start in zip(raw_stream, starts):
+            for raw_decoded_chunk, start in itertools.zip_longest(raw_stream, starts):
+                if start is None or raw_decoded_chunk is None:
+                    raise ValueError('raw_stream and start must be the same length')
                 end = start + len(raw_decoded_chunk.encode(self._encoding))
                 yield DecodedChunk(raw_decoded_chunk, start, end, self._encoding)
         else:
@@ -471,7 +473,9 @@ class EncodedChunkStream(Iterable[EncodedChunk]):
     ) -> Iterable[EncodedChunk]:
         if isinstance(start, Iterable):
             starts = start
-            for raw_encoded_chunk, start in zip(raw_stream, starts):
+            for raw_encoded_chunk, start in itertools.zip_longest(raw_stream, starts):
+                if start is None or raw_encoded_chunk is None:
+                    raise ValueError('raw_stream and start must be the same length')
                 end = start + len(raw_encoded_chunk)
                 yield EncodedChunk(raw_encoded_chunk, start, end, self._encoding)
         else:
