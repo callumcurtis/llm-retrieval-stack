@@ -1,3 +1,5 @@
+import pickle
+
 import pytest
 
 from utils.chunk import EncodedChunk
@@ -518,4 +520,22 @@ def test_split_word_healing_in_decoded_chunk_stream_given_single_word_delimiter(
     ]
     expected = list(decoded_chunk_stream_default_generator().append_wrapped(expected_text, encoding))
     actual = list(DecodedChunkStreamSplitWordHealer(original_text_stream))
+    assert actual == expected
+
+
+def test_decoded_chunk_stream_complete_transformation_pipeline_given_average_file_input(
+    encoded_chunk_stream_default_generator,
+    inputsdir,
+):
+    encoding = 'utf-8'
+    chunk_size = 100
+    original = (inputsdir / 'average-file.original.md').read_text(encoding=encoding)
+    encoded = (inputsdir / 'average-file.original.md').read_bytes()
+    encoded = [encoded[i:i + chunk_size] for i in range(0, len(encoded), chunk_size)]
+    encoded = encoded_chunk_stream_default_generator().append_wrapped(encoded, encoding)
+    decoded = encoded.decode()
+    with open (inputsdir / 'average-file.expected.pickle', 'rb') as f:
+        expected = pickle.load(f)
+    actual = list(DecodedChunkStreamResizerByNumTokens(DecodedChunkStreamSplitWordHealer(decoded)))
+    assert ''.join(a.text for a in actual) == original
     assert actual == expected
