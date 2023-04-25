@@ -16,6 +16,10 @@ Parameters:
   LayersDirectory:
     Type: String
     Default: ../../functions/aws/layers
+  PartSize:
+    Type: Number
+    Default: "8388608"
+    Description: The size of object parts for S3 multipart uploads and byte-range requests. Commonly 8 or 16 MB.
 
 Globals:
   Function:
@@ -60,7 +64,7 @@ Resources:
         - !Ref UploadNotificationQueue
       PolicyDocument:
         Id: !Sub ${ProjectName}-upload-notification-policy
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal: "*"
@@ -117,7 +121,7 @@ Resources:
       Name: !Sub ${ProjectName}-api
       StageName: Prod
       DefinitionBody:
-        swagger: '2.0'
+        swagger: "2.0"
         info:
           title: !Ref ProjectName
         paths:
@@ -161,8 +165,9 @@ Resources:
       Environment:
         Variables:
           UPLOAD_BUCKET: !Ref UploadBucket
+          PART_SIZE: !Ref PartSize
       Policies:
-        - Version: '2012-10-17'
+        - Version: "2012-10-17"
           Statement:
             - Effect: Allow
               Action:

@@ -10,6 +10,7 @@ from utils.chunk import DecodedChunkStreamResizerByNumTokens
 
 
 UPLOAD_BUCKET = os.environ['UPLOAD_BUCKET']
+PART_SIZE = int(os.environ['PART_SIZE'])
 
 MAX_CHUNK_SIZE_BYTES = 500
 
