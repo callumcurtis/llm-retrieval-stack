@@ -9,7 +9,6 @@ from utils.chunk import DecodedChunkStreamSplitWordHealer
 from utils.chunk import DecodedChunkStreamResizerByNumTokens
 
 
-TEXT_PROCESSING_STATE_MACHINE = os.environ['TEXT_PROCESSING_STATE_MACHINE']
 UPLOAD_BUCKET = os.environ['UPLOAD_BUCKET']
 
 MAX_CHUNK_SIZE_BYTES = 500
@@ -41,10 +40,11 @@ def handler(event, context):
         logger.info('Dispatching text for processing', objectKey=object_key)
 
         for text_chunk in text_stream:
-            sf_client.start_execution(
-                stateMachineArn=TEXT_PROCESSING_STATE_MACHINE,
-                input=json.dumps({
-                    'objectKey': object_key,
-                    'text': text_chunk,
-                }),
-            )
+            pass
+            # sf_client.start_execution(
+            #     stateMachineArn=TEXT_PROCESSING_STATE_MACHINE,
+            #     input=json.dumps({
+            #         'objectKey': object_key,
+            #         'text': text_chunk,
+            #     }),
+            # )

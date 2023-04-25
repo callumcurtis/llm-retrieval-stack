@@ -160,7 +160,6 @@ Resources:
         - !Ref UtilsFunctionLayer
       Environment:
         Variables:
-          TEXT_PROCESSING_STATE_MACHINE: !GetAtt TextProcessingStateMachine.Arn
           UPLOAD_BUCKET: !Ref UploadBucket
       Policies:
         - Version: '2012-10-17'
@@ -173,8 +172,6 @@ Resources:
               Resource: !GetAtt UploadNotificationQueue.Arn
         - S3ReadPolicy:
             BucketName: !Ref UploadBucket
-        - StepFunctionsExecutionPolicy:
-            StateMachineName: !GetAtt TextProcessingStateMachine.Name
       Events:
         UploadNotificationQueue:
           Type: SQS
@@ -185,76 +182,3 @@ Resources:
             MaximumBatchingWindowInSeconds: 10
             ScalingConfig:
               MaximumConcurrency: 50
-
-  TextProcessingStateMachineRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub ${ProjectName}-text-processing-state-machine
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - states.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Policies:
-        - PolicyName: TextProcessingStateMachinePolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - lambda:InvokeFunction
-                Resource:
-                  - !GetAtt CreateEmbeddingFunction.Arn
-                  - !GetAtt StoreVectorFunction.Arn
-
-  TextProcessingStateMachine:
-    Type: AWS::StepFunctions::StateMachine
-    Properties:
-      StateMachineName: !Sub ${ProjectName}-process-text
-      DefinitionString: !Sub |
-        {
-          "StartAt": "CreateEmbeddingFunction",
-          "States": {
-            "CreateEmbeddingFunction": {
-              "Type": "Task",
-              "Resource": "${CreateEmbeddingFunction.Arn}",
-              "ResultPath": "$.vector",
-              "Next": "StoreVectorFunction"
-            },
-            "StoreVectorFunction": {
-              "Type": "Task",
-              "Resource": "${StoreVectorFunction.Arn}",
-              "End": true
-            }
-          }
-        }
-      RoleArn: !GetAtt TextProcessingStateMachineRole.Arn
-
-  CreateEmbeddingFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${ProjectName}-create-embedding
-      Handler: index.handler
-      CodeUri: !Sub ${LambdasDirectory}/create_embedding
-      Layers:
-        - !Sub arn:aws:lambda:${AWS::Region}:017000801446:layer:AWSLambdaPowertoolsPythonV2:30
-      Environment:
-        Variables:
-          OPENAI_API_KEY_SECRET_NAME: !Ref OpenAiApiKeySecret
-          OPENAI_API_KEY_SECRET_REGION: !Ref AWS::Region
-
-  StoreVectorFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${ProjectName}-store-vector
-      Handler: index.handler
-      CodeUri: !Sub ${LambdasDirectory}/store_vector
-      Layers:
-        - !Sub arn:aws:lambda:${AWS::Region}:017000801446:layer:AWSLambdaPowertoolsPythonV2:30
-      Environment:
-        Variables:
-          PINECONE_API_KEY_SECRET: !Ref PineconeApiKeySecret
