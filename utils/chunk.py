@@ -164,7 +164,7 @@ class DecodedChunkStreamTransformer(_DecodedChunkStreamInterface, abc.ABC):
 
     @abc.abstractmethod
     def _transformed_iter(self) -> Iterable[DecodedChunk]:
-        raise NotImplementedError
+        pass
 
 
 class DecodedChunkStreamSplitWordHealer(DecodedChunkStreamTransformer):
@@ -347,7 +347,7 @@ class EncodedToDecodedChunkStreamConverter(abc.ABC):
         Raises:
             UnicodeDecodeError: If the encoded chunks cannot be decoded.
         """
-        raise NotImplementedError
+        pass
 
 
 class EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing(EncodedToDecodedChunkStreamConverter):
