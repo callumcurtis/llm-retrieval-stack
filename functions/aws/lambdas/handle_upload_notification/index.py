@@ -1,22 +1,17 @@
 import json
 import os
 
-import boto3
 from aws_lambda_powertools import Logger
 
-from utils.common.chunk import EncodedChunkStream
-from utils.common.chunk import DecodedChunkStreamSplitWordHealer
-from utils.common.chunk import DecodedChunkStreamResizerByNumTokens
+from utils.aws.s3 import S3ObjectId
+from utils.aws.s3 import S3ObjectPartitioner
 
 
 UPLOAD_BUCKET = os.environ['UPLOAD_BUCKET']
 PART_SIZE = int(os.environ['PART_SIZE'])
 
-MAX_CHUNK_SIZE_BYTES = 500
-
 logger = Logger()
-s3_client = boto3.client('s3')
-sf_client = boto3.client('stepfunctions')
+s3_object_partitioner = S3ObjectPartitioner()
 
 
 @logger.inject_lambda_context()
@@ -30,22 +25,9 @@ def handler(event, context):
             continue
 
         object_key = sqs_body['Records'][0]['s3']['object']['key']
-        object = s3_client.get_object(Bucket=UPLOAD_BUCKET, Key=object_key)
+        object_id = S3ObjectId(UPLOAD_BUCKET, object_key)
+        object_part_ids = s3_object_partitioner.iter_part_ids(object_id, PART_SIZE)
 
-        text_stream = object['Body'].iter_chunks(MAX_CHUNK_SIZE_BYTES)
-        text_stream = EncodedChunkStream('utf-8').append_wrapped(text_stream, start=0)
-        text_stream = text_stream.decode()
-        text_stream = DecodedChunkStreamSplitWordHealer(text_stream)
-        text_stream = DecodedChunkStreamResizerByNumTokens(text_stream)
-
-        logger.info('Dispatching text for processing', objectKey=object_key)
-
-        for text_chunk in text_stream:
+        for object_part_id in object_part_ids:
+            # TODO: Send object part to SQS
             pass
-            # sf_client.start_execution(
-            #     stateMachineArn=TEXT_PROCESSING_STATE_MACHINE,
-            #     input=json.dumps({
-            #         'objectKey': object_key,
-            #         'text': text_chunk,
-            #     }),
-            # )
