@@ -5,9 +5,9 @@ from typing import Union
 
 import tiktoken
 
-from .utf8 import truncation_point
-from .utf8 import lstrip_continuation_bytes
-from .sequence import index_any
+from gpt_retrieval.utils.common.utf8 import truncation_point
+from gpt_retrieval.utils.common.utf8 import lstrip_continuation_bytes
+from gpt_retrieval.utils.common.sequence import index_any
 
 
 TOKEN_ENCODING = 'cl100k_base'

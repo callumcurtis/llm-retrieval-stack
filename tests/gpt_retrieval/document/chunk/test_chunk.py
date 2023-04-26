@@ -2,13 +2,13 @@ import pickle
 
 import pytest
 
-from gpt_retrieval.utils.common.chunk import EncodedChunk
-from gpt_retrieval.utils.common.chunk import EncodedChunkStream
-from gpt_retrieval.utils.common.chunk import EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing
-from gpt_retrieval.utils.common.chunk import DecodedChunk
-from gpt_retrieval.utils.common.chunk import DecodedChunkStream
-from gpt_retrieval.utils.common.chunk import DecodedChunkStreamResizerByNumTokens
-from gpt_retrieval.utils.common.chunk import DecodedChunkStreamSplitWordHealer
+from gpt_retrieval.document.chunk import EncodedChunk
+from gpt_retrieval.document.chunk import EncodedChunkStream
+from gpt_retrieval.document.chunk import EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing
+from gpt_retrieval.document.chunk import DecodedChunk
+from gpt_retrieval.document.chunk import DecodedChunkStream
+from gpt_retrieval.document.chunk import DecodedChunkStreamResizerByNumTokens
+from gpt_retrieval.document.chunk import DecodedChunkStreamSplitWordHealer
 
 
 def test_wrap_raw_encoded_chunk_stream_given_no_chunks():
