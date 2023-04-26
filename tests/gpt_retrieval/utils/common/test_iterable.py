@@ -1,6 +1,6 @@
 import pytest
 
-from utils.common.iterable import batched
+from gpt_retrieval.utils.common.iterable import batched
 
 
 def test_batched_given_empty_iterable():

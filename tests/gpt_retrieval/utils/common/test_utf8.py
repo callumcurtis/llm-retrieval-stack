@@ -1,12 +1,12 @@
 import pytest
 
-from utils.common.utf8 import is_continuation_byte
-from utils.common.utf8 import leading_continuation_bytes
-from utils.common.utf8 import truncation_point
-from utils.common.utf8 import lstrip_continuation_bytes
-from utils.common.utf8 import rstrip_continuation_bytes
-from utils.common.utf8 import strip_continuation_bytes
-from utils.common.utf8 import MAX_UTF8_CONTINUATION_BYTES_PER_CHAR
+from gpt_retrieval.utils.common.utf8 import is_continuation_byte
+from gpt_retrieval.utils.common.utf8 import leading_continuation_bytes
+from gpt_retrieval.utils.common.utf8 import truncation_point
+from gpt_retrieval.utils.common.utf8 import lstrip_continuation_bytes
+from gpt_retrieval.utils.common.utf8 import rstrip_continuation_bytes
+from gpt_retrieval.utils.common.utf8 import strip_continuation_bytes
+from gpt_retrieval.utils.common.utf8 import MAX_UTF8_CONTINUATION_BYTES_PER_CHAR
 
 
 def test_is_continuation_byte_given_continuation_byte():

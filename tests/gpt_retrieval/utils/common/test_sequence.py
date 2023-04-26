@@ -1,6 +1,6 @@
 import pytest
 
-from utils.common.sequence import index_any
+from gpt_retrieval.utils.common.sequence import index_any
 
 
 @pytest.fixture(params=[True, False])

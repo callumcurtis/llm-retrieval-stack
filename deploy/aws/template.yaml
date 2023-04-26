@@ -40,11 +40,11 @@ Resources:
       Name: !Sub ${ProjectName}-pinecone-api-key
       SecretString: !Ref PineconeApiKey
 
-  CommonUtilsFunctionLayer:
+  CommonFunctionLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:
-      LayerName: !Sub ${ProjectName}-common-utils
-      ContentUri: !Sub ${LayersDirectory}/common-utils
+      LayerName: !Sub ${ProjectName}
+      ContentUri: !Sub ${LayersDirectory}/${ProjectName}
       CompatibleRuntimes:
         - python3.9
     Metadata:
@@ -54,7 +54,7 @@ Resources:
     Type: AWS::Serverless::LayerVersion
     Properties:
       LayerName: !Sub ${ProjectName}-aws-utils
-      ContentUri: !Sub ${LayersDirectory}/aws-utils
+      ContentUri: !Sub ${LayersDirectory}/${ProjectName}-aws-utils
       CompatibleRuntimes:
         - python3.9
     Metadata:
@@ -172,7 +172,7 @@ Resources:
       Layers:
         - !Sub arn:aws:lambda:${AWS::Region}:017000801446:layer:AWSLambdaPowertoolsPythonV2:30
         - !Ref AwsUtilsFunctionLayer
-        - !Ref CommonUtilsFunctionLayer
+        - !Ref CommonFunctionLayer
       Environment:
         Variables:
           UPLOAD_BUCKET: !Ref UploadBucket

@@ -3,11 +3,11 @@ import os
 
 from aws_lambda_powertools import Logger
 
-from utils.common.iterable import batched
-from utils.aws.s3 import S3ObjectId
-from utils.aws.s3 import S3ObjectPartitioner
-from utils.aws.sqs import SqsQueueId
-from utils.aws.sqs import SqsMessageSender
+from gpt_retrieval.utils.common.iterable import batched
+from gpt_retrieval.utils.aws.s3 import S3ObjectId
+from gpt_retrieval.utils.aws.s3 import S3ObjectPartitioner
+from gpt_retrieval.utils.aws.sqs import SqsQueueId
+from gpt_retrieval.utils.aws.sqs import SqsMessageSender
 
 
 UPLOAD_BUCKET = os.environ['UPLOAD_BUCKET']
