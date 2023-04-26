@@ -40,11 +40,21 @@ Resources:
       Name: !Sub ${ProjectName}-pinecone-api-key
       SecretString: !Ref PineconeApiKey
 
-  UtilsFunctionLayer:
+  CommonUtilsFunctionLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:
-      LayerName: !Sub ${ProjectName}-utils
-      ContentUri: !Sub ${LayersDirectory}/utils
+      LayerName: !Sub ${ProjectName}-common-utils
+      ContentUri: !Sub ${LayersDirectory}/common-utils
+      CompatibleRuntimes:
+        - python3.9
+    Metadata:
+      BuildMethod: python3.9
+
+  AwsUtilsFunctionLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub ${ProjectName}-aws-utils
+      ContentUri: !Sub ${LayersDirectory}/aws-utils
       CompatibleRuntimes:
         - python3.9
     Metadata:
@@ -161,7 +171,8 @@ Resources:
       CodeUri: !Sub ${LambdasDirectory}/handle_upload_notification
       Layers:
         - !Sub arn:aws:lambda:${AWS::Region}:017000801446:layer:AWSLambdaPowertoolsPythonV2:30
-        - !Ref UtilsFunctionLayer
+        - !Ref CommonUtilsFunctionLayer
+        - !Ref AwsUtilsFunctionLayer
       Environment:
         Variables:
           UPLOAD_BUCKET: !Ref UploadBucket
