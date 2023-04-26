@@ -176,6 +176,7 @@ Resources:
         Variables:
           UPLOAD_BUCKET: !Ref UploadBucket
           PART_SIZE: !Ref PartSize
+          UNPROCESSED_OBJECT_PART_QUEUE: !Ref UnprocessedObjectPartQueue
       Policies:
         - Version: "2012-10-17"
           Statement:
@@ -187,6 +188,8 @@ Resources:
               Resource: !GetAtt UploadNotificationQueue.Arn
         - S3ReadPolicy:
             BucketName: !Ref UploadBucket
+        - SQSSendMessagePolicy:
+            QueueName: !Ref UnprocessedObjectPartQueue
       Events:
         UploadNotificationQueue:
           Type: SQS
@@ -197,3 +200,24 @@ Resources:
             MaximumBatchingWindowInSeconds: 10
             ScalingConfig:
               MaximumConcurrency: 50
+
+  UnprocessedObjectPartQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProjectName}-unprocessed-object-part
+      # To allow time for the downstream Lambda function(s) to process each batch, set to >(lambda timeout * 6)
+      VisibilityTimeout: 300
+
+  UnprocessedObjectPartQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref UnprocessedObjectPartQueue
+      PolicyDocument:
+        Id: !Sub ${ProjectName}-unprocessed-object-part-policy
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: !GetAtt HandleUploadNotificationFunction.Arn
+            Action: sqs:SendMessage
+            Resource: !GetAtt UnprocessedObjectPartQueue.Arn

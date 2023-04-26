@@ -3,15 +3,22 @@ import os
 
 from aws_lambda_powertools import Logger
 
+from utils.common.iterable import batched
 from utils.aws.s3 import S3ObjectId
 from utils.aws.s3 import S3ObjectPartitioner
+from utils.aws.sqs import SqsQueueId
+from utils.aws.sqs import SqsMessageSender
 
 
 UPLOAD_BUCKET = os.environ['UPLOAD_BUCKET']
 PART_SIZE = int(os.environ['PART_SIZE'])
+UNPROCESSED_OBJECT_PART_QUEUE = os.environ['UNPROCESSED_OBJECT_PART_QUEUE']
+OBJECT_PART_IDS_PER_BATCH = 10
 
 logger = Logger()
 s3_object_partitioner = S3ObjectPartitioner()
+sqs_queue_id = SqsQueueId(UNPROCESSED_OBJECT_PART_QUEUE)
+sqs_message_sender = SqsMessageSender()
 
 
 @logger.inject_lambda_context()
@@ -28,6 +35,18 @@ def handler(event, context):
         object_id = S3ObjectId(UPLOAD_BUCKET, object_key)
         object_part_ids = s3_object_partitioner.iter_part_ids(object_id, PART_SIZE)
 
-        for object_part_id in object_part_ids:
-            # TODO: Send object part to SQS
-            pass
+        for object_part_id_batch in batched(object_part_ids, OBJECT_PART_IDS_PER_BATCH):
+            logger.info(
+                'Sending batch of object part IDs to SQS',
+                batch_size=len(object_part_id_batch),
+            )
+            sqs_message_sender.send_batch(
+                sqs_queue_id,
+                [
+                    {
+                        'Id': str(i),
+                        'MessageBody': json.dumps(object_part_id.to_json()),
+                    }
+                    for i, object_part_id in enumerate(object_part_id_batch)
+                ],
+            )
