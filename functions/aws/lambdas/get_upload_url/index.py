@@ -1,6 +1,6 @@
 import os
-import json
 
+from gpt_retrieval.api.model import GetUploadUrlResponse
 from gpt_retrieval.utils.aws.s3 import S3ObjectId
 from gpt_retrieval.utils.aws.s3 import S3MethodPresigner
 
@@ -19,9 +19,8 @@ def handler(event, context):
         object_id,
         lifetime=PRESIGNED_URL_LIFETIME,
     )
+    body = GetUploadUrlResponse(uploadUrl=upload_url).json()
     return {
         'statusCode': 200,
-        'body': json.dumps({
-            'uploadUrl': upload_url,
-        })
+        'body': body,
     }
