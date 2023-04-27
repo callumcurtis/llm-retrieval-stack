@@ -10,13 +10,13 @@ from gpt_retrieval.document.chunk.stream import DecodedChunkStreamInterface
 from gpt_retrieval.utils.common.sequence import index_any
 
 
-TOKEN_ENCODING = 'cl100k_base'
+TOKEN_ENCODING_DEFAULT = 'cl100k_base'
 PREFERRED_CHUNK_DELIMITERS_DEFAULT = '.!?\n'
 WORD_DELIMITERS_DEFAULT = ' .,;:!?-—\t\n\r\f\v'
 MIN_TOKENS_PER_CHUNK_DEFAULT = 50
 MAX_TOKENS_PER_CHUNK_DEFAULT = 200
 
-tokenizer = tiktoken.get_encoding(TOKEN_ENCODING)
+tokenizer_default = tiktoken.get_encoding(TOKEN_ENCODING_DEFAULT)
 
 
 class DecodedChunkStreamTransformer(DecodedChunkStreamInterface, abc.ABC):
@@ -118,6 +118,7 @@ class DecodedChunkStreamResizerByNumTokens(DecodedChunkStreamTransformer):
         stream: DecodedChunkStreamInterface,
         min_tokens_per_chunk: int = MIN_TOKENS_PER_CHUNK_DEFAULT,
         max_tokens_per_chunk: int = MAX_TOKENS_PER_CHUNK_DEFAULT,
+        tokenizer: tiktoken.Encoding = tokenizer_default,
         preferred_delimiters: Iterable[str] = PREFERRED_CHUNK_DELIMITERS_DEFAULT,
     ):
         """
@@ -125,11 +126,13 @@ class DecodedChunkStreamResizerByNumTokens(DecodedChunkStreamTransformer):
             stream: The stream to resize.
             min_tokens_per_chunk: The minimum number of tokens per chunk.
             max_tokens_per_chunk: The maximum number of tokens per chunk.
+            tokenizer: The tokenizer to use to count tokens.
             preferred_delimiters: The preferred delimiters to split chunks at.
         """
         super().__init__(stream)
         self._min_tokens_per_chunk = min_tokens_per_chunk
         self._max_tokens_per_chunk = max_tokens_per_chunk
+        self._tokenizer = tokenizer
         self._preferred_delimiters = preferred_delimiters
     
     def _transformed_iter(self) -> Iterable[DecodedChunk]:
@@ -146,11 +149,11 @@ class DecodedChunkStreamResizerByNumTokens(DecodedChunkStreamTransformer):
 
         for original_chunk in self._decoratee:
 
-            if original_chunk.start - len(tokenizer.decode(leftover_tokens).encode(self._decoratee.encoding)) != start:
+            if original_chunk.start - len(self._tokenizer.decode(leftover_tokens).encode(self._decoratee.encoding)) != start:
                 leftover_tokens = []
                 start = original_chunk.start
 
-            original_chunk_tokens = tokenizer.encode(original_chunk.text, disallowed_special=())
+            original_chunk_tokens = self._tokenizer.encode(original_chunk.text, disallowed_special=())
             tokens = itertools.chain(leftover_tokens, original_chunk_tokens)
             n_tokens = len(leftover_tokens) + len(original_chunk_tokens)
 
@@ -161,13 +164,13 @@ class DecodedChunkStreamResizerByNumTokens(DecodedChunkStreamTransformer):
             while n_tokens >= self._min_tokens_per_chunk:
                 resized_chunk_tokens = list(itertools.islice(tokens, self._max_tokens_per_chunk))
                 n_tokens -= len(resized_chunk_tokens)
-                resized_chunk_text = tokenizer.decode(resized_chunk_tokens)
+                resized_chunk_text = self._tokenizer.decode(resized_chunk_tokens)
 
                 preferred_delimiter_index = index_any(resized_chunk_text, self._preferred_delimiters, reverse=True)
 
                 if preferred_delimiter_index >= 0:
                     resized_chunk_text_to_delimiter = resized_chunk_text[:preferred_delimiter_index + 1]
-                    resized_chunk_tokens_to_delimiter = tokenizer.encode(resized_chunk_text_to_delimiter, disallowed_special=())
+                    resized_chunk_tokens_to_delimiter = self._tokenizer.encode(resized_chunk_text_to_delimiter, disallowed_special=())
                     if len(resized_chunk_tokens_to_delimiter) >= self._min_tokens_per_chunk:
                         resized_chunk_text_after_delimiter = resized_chunk_text[preferred_delimiter_index + 1:]
                         resized_chunk_text = resized_chunk_text_to_delimiter
@@ -175,7 +178,7 @@ class DecodedChunkStreamResizerByNumTokens(DecodedChunkStreamTransformer):
                         # a slice of resized_chunk_tokens, since the subset encoding
                         # (used by tokens_to_delimiter) cannot be compared to the
                         # original encoding (used by resized_chunk_tokens).
-                        resized_chunk_tokens_after_delimiter = tokenizer.encode(resized_chunk_text_after_delimiter, disallowed_special=())
+                        resized_chunk_tokens_after_delimiter = self._tokenizer.encode(resized_chunk_text_after_delimiter, disallowed_special=())
                         tokens = itertools.chain(resized_chunk_tokens_after_delimiter, tokens)
                         n_tokens += len(resized_chunk_tokens_after_delimiter)
 
