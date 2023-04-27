@@ -5,7 +5,7 @@ from gpt_retrieval.utils.aws.s3 import S3ObjectId
 from gpt_retrieval.utils.aws.s3 import S3MethodPresigner
 
 
-UPLOAD_BUCKET_NAME = os.environ['UPLOAD_BUCKET']
+UPLOAD_BUCKET_NAME = os.environ['UPLOAD_BUCKET_NAME']
 PRESIGNED_URL_LIFETIME = int(os.environ['PRESIGNED_URL_LIFETIME'])
 
 s3_method_presigner = S3MethodPresigner()

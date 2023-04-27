@@ -10,14 +10,14 @@ from gpt_retrieval.utils.aws.sqs import SqsQueueId
 from gpt_retrieval.utils.aws.sqs import SqsMessageSender
 
 
-UPLOAD_BUCKET = os.environ['UPLOAD_BUCKET']
+UPLOAD_BUCKET_NAME = os.environ['UPLOAD_BUCKET_NAME']
 PART_SIZE = int(os.environ['PART_SIZE'])
-UNPROCESSED_OBJECT_PART_QUEUE = os.environ['UNPROCESSED_OBJECT_PART_QUEUE']
+UNPROCESSED_OBJECT_PART_QUEUE_URL = os.environ['UNPROCESSED_OBJECT_PART_QUEUE_URL']
 OBJECT_PART_IDS_PER_BATCH = 10
 
 logger = Logger()
 s3_object_partitioner = S3ObjectPartitioner()
-sqs_queue_id = SqsQueueId(UNPROCESSED_OBJECT_PART_QUEUE)
+sqs_queue_id = SqsQueueId(UNPROCESSED_OBJECT_PART_QUEUE_URL)
 sqs_message_sender = SqsMessageSender()
 
 
@@ -32,7 +32,7 @@ def handler(event, context):
             continue
 
         object_key = sqs_body['Records'][0]['s3']['object']['key']
-        object_id = S3ObjectId(UPLOAD_BUCKET, object_key)
+        object_id = S3ObjectId(UPLOAD_BUCKET_NAME, object_key)
         object_part_ids = s3_object_partitioner.iter_part_ids(object_id, PART_SIZE)
 
         for object_part_id_batch in batched(object_part_ids, OBJECT_PART_IDS_PER_BATCH):

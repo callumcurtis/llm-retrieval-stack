@@ -119,7 +119,7 @@ Resources:
         - !Ref AwsUtilsFunctionLayer
       Environment:
         Variables:
-          UPLOAD_BUCKET: !Ref UploadBucket
+          UPLOAD_BUCKET_NAME: !Ref UploadBucket
           PRESIGNED_URL_LIFETIME: !Ref PresignedUrlLifetime
       Policies:
         - S3WritePolicy:
@@ -182,9 +182,9 @@ Resources:
         - !Ref CommonFunctionLayer
       Environment:
         Variables:
-          UPLOAD_BUCKET: !Ref UploadBucket
+          UPLOAD_BUCKET_NAME: !Ref UploadBucket
           PART_SIZE: !Ref PartSize
-          UNPROCESSED_OBJECT_PART_QUEUE: !GetAtt UnprocessedObjectPartQueue.QueueUrl
+          UNPROCESSED_OBJECT_PART_QUEUE_URL: !GetAtt UnprocessedObjectPartQueue.QueueUrl
       Policies:
         - Version: "2012-10-17"
           Statement:
