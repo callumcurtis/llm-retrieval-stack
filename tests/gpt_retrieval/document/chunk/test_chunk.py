@@ -3,12 +3,12 @@ import pickle
 import pytest
 
 from gpt_retrieval.document.chunk import EncodedChunk
-from gpt_retrieval.document.chunk import EncodedChunkStream
-from gpt_retrieval.document.chunk import EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing
 from gpt_retrieval.document.chunk import DecodedChunk
-from gpt_retrieval.document.chunk import DecodedChunkStream
-from gpt_retrieval.document.chunk import DecodedChunkStreamResizerByNumTokens
-from gpt_retrieval.document.chunk import DecodedChunkStreamSplitWordHealer
+from gpt_retrieval.document.chunk.stream import EncodedChunkStream
+from gpt_retrieval.document.chunk.stream import DecodedChunkStream
+from gpt_retrieval.document.chunk.stream.transformation import DecodedChunkStreamResizerByNumTokens
+from gpt_retrieval.document.chunk.stream.transformation import DecodedChunkStreamSplitWordHealer
+from gpt_retrieval.document.chunk.stream.conversion import EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing
 
 
 def test_wrap_raw_encoded_chunk_stream_given_no_chunks():
@@ -456,7 +456,7 @@ def test_decoded_chunk_stream_complete_transformation_pipeline_given_average_fil
     encoded = (inputsdir / 'average-file.original.md').read_bytes()
     encoded = [encoded[i:i + chunk_size] for i in range(0, len(encoded), chunk_size)]
     encoded = EncodedChunkStream(encoding).append_wrapped(encoded)
-    decoded = encoded.decode()
+    decoded = EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing().decode(encoded)
     with open (inputsdir / 'average-file.expected.pickle', 'rb') as f:
         expected = pickle.load(f)
     actual = list(DecodedChunkStreamResizerByNumTokens(DecodedChunkStreamSplitWordHealer(decoded)))
