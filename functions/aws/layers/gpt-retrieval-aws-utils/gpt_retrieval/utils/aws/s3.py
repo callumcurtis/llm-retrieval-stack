@@ -46,7 +46,7 @@ class S3ObjectPartId:
         )
 
 
-class S3ObjectRetriever:
+class S3ObjectReader:
 
     def __init__(self, client = None):
         self._client = client or boto3.client('s3')
@@ -73,15 +73,15 @@ class S3ObjectRetriever:
 
 class S3ObjectPartitioner:
 
-    def __init__(self, retriever: S3ObjectRetriever = None):
-        self._retriever = retriever or S3ObjectRetriever()
+    def __init__(self, reader: S3ObjectReader = None):
+        self._reader = reader or S3ObjectReader()
 
     def iter_part_ids(
         self,
         object_id: S3ObjectId,
         part_size: int,
     ) -> Iterable[S3ObjectPartId]:
-        object_metadata = self._retriever.get(object_id, metadata_only=True)
+        object_metadata = self._reader.get(object_id, metadata_only=True)
         object_size = object_metadata['ContentLength']
         for start in range(0, object_size, part_size):
             end = min(start + part_size, object_size)
