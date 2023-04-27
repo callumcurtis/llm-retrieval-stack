@@ -49,7 +49,7 @@ class S3ObjectPartId:
 
 class S3MethodPresigner:
 
-    DEFAULT_EXPIRATION = 120
+    DEFAULT_LIFETIME = 120
 
     class Method(enum.Enum):
         PUT = 'put_object'
@@ -62,7 +62,7 @@ class S3MethodPresigner:
         self,
         method: Method,
         object_id: S3ObjectId,
-        expiration: int = DEFAULT_EXPIRATION,
+        lifetime: int = DEFAULT_LIFETIME,
         **kwargs,
     ) -> str:
         return self._client.generate_presigned_url(
@@ -71,7 +71,7 @@ class S3MethodPresigner:
                 'Bucket': object_id.bucket,
                 'Key': object_id.key,
             },
-            ExpiresIn=expiration,
+            ExpiresIn=lifetime,
             **kwargs,
         )
 

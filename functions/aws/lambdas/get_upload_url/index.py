@@ -6,6 +6,7 @@ from gpt_retrieval.utils.aws.s3 import S3MethodPresigner
 
 
 UPLOAD_BUCKET_NAME = os.environ['UPLOAD_BUCKET']
+PRESIGNED_URL_LIFETIME = int(os.environ['PRESIGNED_URL_LIFETIME'])
 
 s3_method_presigner = S3MethodPresigner()
 
@@ -16,6 +17,7 @@ def handler(event, context):
     upload_url = s3_method_presigner.presign(
         S3MethodPresigner.Method.PUT,
         object_id,
+        lifetime=PRESIGNED_URL_LIFETIME,
     )
     return {
         'statusCode': 200,

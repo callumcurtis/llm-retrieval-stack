@@ -20,6 +20,10 @@ Parameters:
     Type: Number
     Default: "8388608"
     Description: The size of object parts for S3 multipart uploads and byte-range requests. Commonly 8 or 16 MB.
+  PresignedUrlLifetime:
+    Type: Number
+    Default: "3600"
+    Description: The number of seconds for which presigned URLs are valid.
 
 Globals:
   Function:
@@ -116,6 +120,7 @@ Resources:
       Environment:
         Variables:
           UPLOAD_BUCKET: !Ref UploadBucket
+          PRESIGNED_URL_LIFETIME: !Ref PresignedUrlLifetime
       Policies:
         - S3WritePolicy:
             BucketName: !Ref UploadBucket
