@@ -1,3 +1,4 @@
+import enum
 from typing import Iterable
 
 import boto3
@@ -43,6 +44,35 @@ class S3ObjectPartId:
             S3ObjectId.from_json(json['object']),
             json['start'],
             json['end'],
+        )
+
+
+class S3MethodPresigner:
+
+    DEFAULT_EXPIRATION = 120
+
+    class Method(enum.Enum):
+        PUT = 'put_object'
+        GET = 'get_object'
+
+    def __init__(self, client = None):
+        self._client = client or boto3.client('s3')
+
+    def presign(
+        self,
+        method: Method,
+        object_id: S3ObjectId,
+        expiration: int = DEFAULT_EXPIRATION,
+        **kwargs,
+    ) -> str:
+        return self._client.generate_presigned_url(
+            ClientMethod=method.value,
+            Params={
+                'Bucket': object_id.bucket,
+                'Key': object_id.key,
+            },
+            ExpiresIn=expiration,
+            **kwargs,
         )
 
 

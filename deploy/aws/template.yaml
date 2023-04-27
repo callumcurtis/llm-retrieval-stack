@@ -111,6 +111,8 @@ Resources:
       FunctionName: !Sub ${ProjectName}-get-upload-url
       Handler: index.handler
       CodeUri: !Sub ${LambdasDirectory}/get_upload_url
+      Layers:
+        - !Ref AwsUtilsFunctionLayer
       Environment:
         Variables:
           UPLOAD_BUCKET: !Ref UploadBucket
