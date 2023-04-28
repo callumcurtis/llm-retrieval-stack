@@ -41,7 +41,11 @@ class PineconeVectorStoreClient(VectorStoreClient):
                 dimension=self.dimension,
                 metadata_config=metadata_config,
             )
-        return pinecone.Index(name)
+        index = pinecone.Index(name)
+        # Make a request to ensure the index is ready.
+        # Fixes an issue where upsert requests fail with a 503 error.
+        index.describe_index_stats()
+        return index
 
     @retry(wait=wait_random_exponential(min=1, max=20), stop=stop_after_attempt(3))
     async def _upsert_batch_async(self, vectors: list[StoredVector]) -> None:
