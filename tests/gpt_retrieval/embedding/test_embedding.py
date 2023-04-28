@@ -18,9 +18,9 @@ def openai_api_key():
 def test_get_embedding_provider():
     api_key = "fake-api-key"
     model = "text-embedding-ada-002"
-    expected = OpenAIEmbeddingProvider(api_key, model)
     actual = get_embedding_provider(model, api_key=api_key)
-    assert actual == expected
+    assert isinstance(actual, OpenAIEmbeddingProvider)
+    assert actual.engine == model
 
 
 @pytest.mark.billable

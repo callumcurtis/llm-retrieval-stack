@@ -34,8 +34,3 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         data = (await openai.Embedding.acreate(input=texts, engine=self.engine)).data
         data = sorted(data, key=lambda x: x["index"])  # maintain the same order as input.
         return [d["embedding"] for d in data]
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, OpenAIEmbeddingProvider):
-            return False
-        return self.engine == other.engine
