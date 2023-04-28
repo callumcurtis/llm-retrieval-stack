@@ -11,15 +11,13 @@ class OpenAIEmbeddingModel(enum.Enum):
     ADA_002 = "text-embedding-ada-002"
 
 
-OPENAI_EMBEDDING_MODEL_DEFAULT = OpenAIEmbeddingModel.ADA_002
-MAX_TEXTS_PER_BATCH = 2048
-
-
 class OpenAIEmbeddingProvider(EmbeddingProvider):
+    EMBED_BATCH_SIZE = 2048
+
     def __init__(
         self,
         api_key: str,
-        engine: str = OPENAI_EMBEDDING_MODEL_DEFAULT,
+        engine: str,
     ):
         openai.api_key = api_key
         self.engine = engine
@@ -28,7 +26,7 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
     async def _embed_batch_async(self, texts: list[str]) -> list[Vector]:
         # The following is taken from openai.embeddings_utils
         # It has been duplicatd here to avoid the heavy dependencies required by openai.embeddings_utils
-        assert len(texts) <= MAX_TEXTS_PER_BATCH, f"Batch size should not be larger than {MAX_TEXTS_PER_BATCH}."
+        assert len(texts) <= self.EMBED_BATCH_SIZE, f"Batch size should not be larger than {self.EMBED_BATCH_SIZE}."
 
         # replace newlines, which can negatively affect performance.
         texts = [text.replace("\n", " ") for text in texts]
