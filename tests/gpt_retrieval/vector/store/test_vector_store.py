@@ -3,6 +3,7 @@ import asyncio
 
 import pytest
 import pinecone
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from gpt_retrieval.vector.store import StoredVector
 from gpt_retrieval.vector.store import StoredVectorMetadata
@@ -53,6 +54,7 @@ def remove_pinecone_index_before_and_after_test(init_pinecone_client, pinecone_i
 
 
 @pytest.fixture
+@retry(wait=wait_exponential(multiplier=1, min=4, max=10), stop=stop_after_attempt(3))
 def pinecone_index(
     remove_pinecone_index_before_and_after_test,
     pinecone_index_name,
@@ -62,7 +64,11 @@ def pinecone_index(
         pinecone_index_name,
         dimension=pinecone_dimension,
     )
-    yield pinecone.Index(pinecone_index_name)
+    index = pinecone.Index(pinecone_index_name)
+    # Make a request to ensure the index is ready.
+    # Fixes an issue where upsert requests fail with a 503 error.
+    index.describe_index_stats()
+    return index
 
 
 @pytest.mark.billable
