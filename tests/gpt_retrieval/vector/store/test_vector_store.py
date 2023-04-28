@@ -66,6 +66,7 @@ def pinecone_index(
 
 
 @pytest.mark.billable
+@pytest.mark.slow
 def test_get_pinecone_vector_store_client(
     remove_pinecone_index_before_and_after_test,
     pinecone_api_key,
@@ -98,6 +99,7 @@ class FakeStoredVectorMetadata(StoredVectorMetadata):
 
 
 @pytest.mark.billable
+@pytest.mark.slow
 def test_pinecone_vector_store_client_upsert_batch_async(
     pinecone_index,
     pinecone_api_key,
