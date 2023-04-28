@@ -8,25 +8,29 @@ from gpt_retrieval.embedding.provider.openai import OpenAIEmbeddingClient
 
 
 @pytest.fixture
-def openai_api_key():
+def real_openai_api_key():
     key = os.environ.get("OPENAI_API_KEY")
     if key is None:
         raise ValueError("OPENAI_API_KEY environment variable not set")
     return key
 
 
-def test_get_embedding_client():
-    api_key = "fake-api-key"
+@pytest.fixture
+def fake_openai_api_key():
+    return "fake-openai-api-key"
+
+
+def test_get_embedding_client(fake_openai_api_key):
     model = "text-embedding-ada-002"
-    actual = get_embedding_client(model, api_key=api_key)
+    actual = get_embedding_client(model, api_key=fake_openai_api_key)
     assert isinstance(actual, OpenAIEmbeddingClient)
     assert actual.engine == model
 
 
 @pytest.mark.billable
-def test_openai_embed_batch_async(openai_api_key):
+def test_openai_embed_batch_async(real_openai_api_key):
     model = "text-embedding-ada-002"
-    client = OpenAIEmbeddingClient(openai_api_key, model)
+    client = OpenAIEmbeddingClient(real_openai_api_key, model)
     texts = ["Hello world", "Goodbye world"]
     actual = asyncio.run(client.embed_batch_async(texts))
     assert len(actual) == len(texts)

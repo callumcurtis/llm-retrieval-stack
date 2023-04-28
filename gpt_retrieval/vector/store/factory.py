@@ -13,7 +13,7 @@ vector_store_client_builder_by_name: dict[str, VectorStoreClientBuilder] = {
 }
 
 
-def get_vector_store(name: str, **kwargs) -> VectorStoreClient:
+def get_vector_store_client(name: str, **kwargs) -> VectorStoreClient:
     vector_store_client_builder = vector_store_client_builder_by_name.get(name)
     if vector_store_client_builder is None:
         raise ValueError(f"Unknown vector store {name}")

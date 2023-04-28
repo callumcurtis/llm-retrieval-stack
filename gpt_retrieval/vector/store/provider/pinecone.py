@@ -8,7 +8,7 @@ from gpt_retrieval.vector.store.provider.base import VectorStoreClient
 
 class PineconeVectorStoreClient(VectorStoreClient):
     UPSERT_BATCH_SIZE = 100
-    REQUIRED_METADATA_FIELDS = {}
+    REQUIRED_METADATA_FIELDS = set()
 
     def __init__(
         self,
