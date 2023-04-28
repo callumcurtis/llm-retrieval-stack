@@ -3,7 +3,7 @@ import enum
 import openai
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 
-from gpt_retrieval.vector import Vector
+from gpt_retrieval.embedding import Embedding
 from gpt_retrieval.embedding.provider.base import EmbeddingProvider
 
 
@@ -23,7 +23,7 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         self.engine = engine
 
     @retry(wait=wait_random_exponential(min=1, max=20), stop=stop_after_attempt(6))
-    async def _embed_batch_async(self, texts: list[str]) -> list[Vector]:
+    async def _embed_batch_async(self, texts: list[str]) -> list[Embedding]:
         # The following is taken from openai.embeddings_utils
         # It has been duplicatd here to avoid the heavy dependencies required by openai.embeddings_utils
         assert len(texts) <= self.EMBED_BATCH_SIZE, f"Batch size should not be larger than {self.EMBED_BATCH_SIZE}."
