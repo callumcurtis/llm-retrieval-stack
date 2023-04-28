@@ -3,10 +3,10 @@ from tenacity import retry, stop_after_attempt, wait_random_exponential
 
 from gpt_retrieval.vector.store import StoredVector
 from gpt_retrieval.vector.store import StoredVectorMetadata
-from gpt_retrieval.vector.store.provider.base import VectorStore
+from gpt_retrieval.vector.store.provider.base import VectorStoreClient
 
 
-class PineconeVectorStore(VectorStore):
+class PineconeVectorStoreClient(VectorStoreClient):
     UPSERT_BATCH_SIZE = 100
     REQUIRED_METADATA_FIELDS = {}
 

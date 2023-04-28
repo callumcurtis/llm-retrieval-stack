@@ -1,21 +1,21 @@
 from typing import Callable
 
-from gpt_retrieval.embedding.provider.base import EmbeddingProvider
+from gpt_retrieval.embedding.provider.base import EmbeddingClient
 from gpt_retrieval.embedding.provider.openai import OpenAIEmbeddingModel
-from gpt_retrieval.embedding.provider.openai import OpenAIEmbeddingProvider
+from gpt_retrieval.embedding.provider.openai import OpenAIEmbeddingClient
 
 
-EmbeddingProviderBuilder = Callable[..., EmbeddingProvider]
-openai_embedding_provider_builder: EmbeddingProviderBuilder = lambda model, **kwargs: OpenAIEmbeddingProvider(kwargs['api_key'], model)
+EmbeddingClientBuilder = Callable[..., EmbeddingClient]
+openai_embedding_client_builder: EmbeddingClientBuilder = lambda model, **kwargs: OpenAIEmbeddingClient(**kwargs, engine=model)
 
 
-embedding_provider_builder_by_model: dict[str, EmbeddingProviderBuilder] = {
-    **{model.value: openai_embedding_provider_builder for model in OpenAIEmbeddingModel},
+embedding_client_builder_by_model: dict[str, EmbeddingClientBuilder] = {
+    **{model.value: openai_embedding_client_builder for model in OpenAIEmbeddingModel},
 }
 
 
-def get_embedding_provider(model: str, **kwargs) -> EmbeddingProvider:
-    embedding_provider_builder = embedding_provider_builder_by_model.get(model)
-    if embedding_provider_builder is None:
+def get_embedding_client(model: str, **kwargs) -> EmbeddingClient:
+    embedding_client_builder = embedding_client_builder_by_model.get(model)
+    if embedding_client_builder is None:
         raise ValueError(f"Unknown model {model}")
-    return embedding_provider_builder(model, **kwargs)
+    return embedding_client_builder(model, **kwargs)

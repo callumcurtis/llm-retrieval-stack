@@ -3,7 +3,7 @@ import abc
 from gpt_retrieval.embedding import Embedding
 
 
-class EmbeddingProvider(abc.ABC):
+class EmbeddingClient(abc.ABC):
     EMBED_BATCH_SIZE: int
 
     async def embed_batch_async(self, texts: list[str]) -> list[Embedding]:

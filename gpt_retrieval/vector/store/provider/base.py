@@ -3,7 +3,7 @@ import abc
 from gpt_retrieval.vector.store import StoredVector
 
 
-class VectorStore(abc.ABC):
+class VectorStoreClient(abc.ABC):
     UPSERT_BATCH_SIZE: int
 
     async def upsert_batch_async(self, vectors: list[StoredVector]) -> None:

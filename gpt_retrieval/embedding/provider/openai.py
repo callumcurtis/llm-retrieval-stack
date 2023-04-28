@@ -4,14 +4,14 @@ import openai
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 
 from gpt_retrieval.embedding import Embedding
-from gpt_retrieval.embedding.provider.base import EmbeddingProvider
+from gpt_retrieval.embedding.provider.base import EmbeddingClient
 
 
 class OpenAIEmbeddingModel(enum.Enum):
     ADA_002 = "text-embedding-ada-002"
 
 
-class OpenAIEmbeddingProvider(EmbeddingProvider):
+class OpenAIEmbeddingClient(EmbeddingClient):
     EMBED_BATCH_SIZE = 2048
 
     def __init__(
