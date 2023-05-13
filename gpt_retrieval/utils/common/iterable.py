@@ -58,4 +58,4 @@ class ConcurrentAsyncMapper(Generic[_T]):
 
             continue_discarding_tasks.clear()
 
-            concurrent.futures.wait(self._tasks)
+            concurrent.futures.wait(active_tasks)
