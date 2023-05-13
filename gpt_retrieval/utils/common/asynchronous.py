@@ -1,7 +1,7 @@
 import asyncio
 import threading
 import concurrent.futures
-from typing import Callable, Awaitable
+from types import CoroutineType
 
 from .invariant import invariant
 
@@ -51,7 +51,7 @@ class BackgroundEventLoop:
         self._loop.close()
         self._closed = True
 
-    def create_task(self, coro: Callable[[], Awaitable[None]]) -> concurrent.futures.Future:
+    def create_task(self, coro: CoroutineType) -> concurrent.futures.Future:
         assert self._running
         return asyncio.run_coroutine_threadsafe(coro, self._loop)
 

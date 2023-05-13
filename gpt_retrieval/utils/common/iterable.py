@@ -1,7 +1,8 @@
 import itertools
 import threading
 import concurrent.futures
-from typing import Iterable, Callable, Awaitable, Generic, TypeVar
+from typing import Iterable, Generic, TypeVar
+from types import CoroutineType
 
 from .asynchronous import BackgroundEventLoop
 
@@ -22,7 +23,7 @@ class ConcurrentAsyncMapper(Generic[_T]):
 
     def __init__(
         self,
-        callable: Callable[[_T], Awaitable[None]],
+        callable: CoroutineType,
         max_concurrent_tasks: int,
     ):
         self._callable = callable
