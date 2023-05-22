@@ -13,13 +13,13 @@ s3_method_presigner = S3MethodPresigner()
 
 def handler(event, context):
     object_key = event['pathParameters']['objectKey']
-    object_id = S3ObjectId(UPLOAD_BUCKET_NAME, object_key)
+    object_id = S3ObjectId(bucket=UPLOAD_BUCKET_NAME, key=object_key)
     upload_url = s3_method_presigner.presign(
         S3MethodPresigner.Method.PUT,
         object_id,
         lifetime=PRESIGNED_URL_LIFETIME,
     )
-    body = GetUploadUrlResponse(uploadUrl=upload_url).json()
+    body = GetUploadUrlResponse(upload_url=upload_url).json(by_alias=True)
     return {
         'statusCode': 200,
         'body': body,

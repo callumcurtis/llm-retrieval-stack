@@ -1,21 +1,9 @@
 import boto3
+import pydantic
 
 
-class SqsQueueId:
-
-    def __init__(self, url: str):
-        self.url = url
-    
-    def to_json(self) -> dict:
-        return {
-            'url': self.url,
-        }
-    
-    @classmethod
-    def from_json(cls, json: dict) -> 'SqsQueueId':
-        return cls(
-            json['url'],
-        )
+class SqsQueueId(pydantic.BaseModel):
+    url: str
 
 
 class SqsMessageSenderError(Exception):

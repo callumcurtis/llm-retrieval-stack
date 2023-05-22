@@ -3,6 +3,7 @@ import asyncio
 
 import pytest
 
+from gpt_retrieval.configuration import Configuration
 from gpt_retrieval.embedding.factory import get_embedding_client
 from gpt_retrieval.embedding.provider.openai import OpenAIEmbeddingClient
 
@@ -21,10 +22,13 @@ def fake_openai_api_key():
 
 
 def test_get_embedding_client(fake_openai_api_key):
-    model = "text-embedding-ada-002"
-    actual = get_embedding_client(model, api_key=fake_openai_api_key)
+    configuration = Configuration(
+        embedding_model_name="text-embedding-ada-002",
+    )
+    configuration.set_openai_api_key_callback(lambda: fake_openai_api_key)
+    actual = get_embedding_client(configuration)
     assert isinstance(actual, OpenAIEmbeddingClient)
-    assert actual.engine == model
+    assert actual.engine == configuration.embedding_model_name
 
 
 @pytest.mark.billable

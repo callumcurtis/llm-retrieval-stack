@@ -17,7 +17,7 @@ OBJECT_PART_IDS_PER_BATCH = 10
 
 logger = Logger()
 s3_object_partitioner = S3ObjectPartitioner()
-sqs_queue_id = SqsQueueId(UNPROCESSED_OBJECT_PART_QUEUE_URL)
+sqs_queue_id = SqsQueueId(url=UNPROCESSED_OBJECT_PART_QUEUE_URL)
 sqs_message_sender = SqsMessageSender()
 
 
@@ -32,7 +32,7 @@ def handler(event, context):
             continue
 
         object_key = sqs_body['Records'][0]['s3']['object']['key']
-        object_id = S3ObjectId(UPLOAD_BUCKET_NAME, object_key)
+        object_id = S3ObjectId(bucket=UPLOAD_BUCKET_NAME, key=object_key)
         object_part_ids = s3_object_partitioner.iter_part_ids(object_id, PART_SIZE)
 
         for object_part_id_batch in batched(object_part_ids, OBJECT_PART_IDS_PER_BATCH):
@@ -45,7 +45,7 @@ def handler(event, context):
                 [
                     {
                         'Id': str(i),
-                        'MessageBody': json.dumps(object_part_id.to_json()),
+                        'MessageBody': json.dumps(object_part_id.json(by_alias=True)),
                     }
                     for i, object_part_id in enumerate(object_part_id_batch)
                 ],

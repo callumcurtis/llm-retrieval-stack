@@ -1,5 +1,8 @@
-from pydantic import BaseModel
+import pydantic
 
 
-class GetUploadUrlResponse(BaseModel):
-    uploadUrl: str
+class GetUploadUrlResponse(pydantic.BaseModel):
+    upload_url: str = pydantic.Field(alias='uploadUrl')
+
+    class Config:
+        allow_population_by_field_name = True

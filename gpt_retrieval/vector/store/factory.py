@@ -1,11 +1,18 @@
 from typing import Callable
 
+from gpt_retrieval.configuration import Configuration
 from gpt_retrieval.vector.store.provider.base import VectorStoreClient
 from gpt_retrieval.vector.store.provider.pinecone import PineconeVectorStoreClient
 
 
 VectorStoreClientBuilder = Callable[..., VectorStoreClient]
-pinecone_vector_store_client_builder: VectorStoreClientBuilder = lambda **kwargs: PineconeVectorStoreClient(**kwargs)
+pinecone_vector_store_client_builder: VectorStoreClientBuilder = lambda c: PineconeVectorStoreClient(
+    api_key=c.pinecone_api_key,
+    environment=c.pinecone_environment,
+    dimension=c.pinecone_dimension,
+    index_name=c.pinecone_index_name,
+    metadata_type=c.pinecone_metadata_type,
+)
 
 
 vector_store_client_builder_by_name: dict[str, VectorStoreClientBuilder] = {
@@ -13,8 +20,8 @@ vector_store_client_builder_by_name: dict[str, VectorStoreClientBuilder] = {
 }
 
 
-def get_vector_store_client(name: str, **kwargs) -> VectorStoreClient:
-    vector_store_client_builder = vector_store_client_builder_by_name.get(name)
+def get_vector_store_client(configuration: Configuration) -> VectorStoreClient:
+    vector_store_client_builder = vector_store_client_builder_by_name.get(configuration.vector_store_provider_name)
     if vector_store_client_builder is None:
-        raise ValueError(f"Unknown vector store {name}")
-    return vector_store_client_builder(**kwargs)
+        raise ValueError(f"Unknown vector store {configuration.vector_store_provider_name}")
+    return vector_store_client_builder(configuration)

@@ -1,13 +1,13 @@
-from pydantic import BaseModel
+import pydantic
 
 from gpt_retrieval.vector import Vector
 
 
-class StoredVectorMetadata(BaseModel):
+class StoredVectorMetadata(pydantic.BaseModel):
     pass
 
 
-class StoredVector(BaseModel):
+class StoredVector(pydantic.BaseModel):
     id: str
     vector: Vector
     metadata: StoredVectorMetadata

@@ -2,49 +2,21 @@ import enum
 from typing import Iterable
 
 import boto3
+import pydantic
 
 
-class S3ObjectId:
-
-    def __init__(self, bucket: str, key: str):
-        self.bucket = bucket
-        self.key = key
-
-    def to_json(self) -> dict:
-        return {
-            'bucket': self.bucket,
-            'key': self.key
-        }
-
-    @classmethod
-    def from_json(cls, json: dict) -> 'S3ObjectId':
-        return cls(
-            json['bucket'],
-            json['key'],
-        )
+class S3ObjectId(pydantic.BaseModel):
+    bucket: str
+    key: str
 
 
-class S3ObjectPartId:
+class S3ObjectPartId(pydantic.BaseModel):
+    object_id: S3ObjectId = pydantic.Field(alias='objectId')
+    start: int
+    end: int
 
-    def __init__(self, object_id: S3ObjectId, start: int, end: int):
-        self.object_id = object_id
-        self.start = start
-        self.end = end
-
-    def to_json(self) -> dict:
-        return {
-            'object': self.object_id.to_json(),
-            'start': self.start,
-            'end': self.end,
-        }
-
-    @classmethod
-    def from_json(cls, json: dict) -> 'S3ObjectPartId':
-        return cls(
-            S3ObjectId.from_json(json['object']),
-            json['start'],
-            json['end'],
-        )
+    class Config:
+        allow_population_by_field_name = True
 
 
 class S3MethodPresigner:
@@ -115,4 +87,21 @@ class S3ObjectPartitioner:
         object_size = object_metadata['ContentLength']
         for start in range(0, object_size, part_size):
             end = min(start + part_size, object_size)
-            yield S3ObjectPartId(object_id, start, end)
+            yield S3ObjectPartId(object_id=object_id, start=start, end=end)
+
+
+class S3ObjectPartReader:
+
+    def __init__(self, reader: S3ObjectReader = None):
+        self._reader = reader or S3ObjectReader()
+
+    def get(
+        self,
+        object_part_id: S3ObjectPartId,
+        **kwargs,
+    ) -> dict:
+        return self._reader.get(
+            object_part_id.object_id,
+            Range=f'bytes={object_part_id.start}-{object_part_id.end - 1}',
+            **kwargs,
+        )

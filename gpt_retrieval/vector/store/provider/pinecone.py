@@ -29,7 +29,7 @@ class PineconeVectorStoreClient(VectorStoreClient):
         metadata_fields = set(self.metadata_type.__fields__.keys())
         assert self.REQUIRED_METADATA_FIELDS.issubset(metadata_fields), f"Metadata must contain the following fields: {self.REQUIRED_METADATA_FIELDS}."
 
-    @retry(wait=wait_random_exponential(min=1, max=20), stop=stop_after_attempt(6))
+    @retry(wait=wait_random_exponential(min=10, max=120), stop=stop_after_attempt(6))
     def _create_or_get_index(self, name: str):
         if name not in pinecone.list_indexes():
             metadata_fields = list(self.metadata_type.__fields__.keys())

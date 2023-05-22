@@ -5,6 +5,7 @@ import pytest
 import pinecone
 from tenacity import retry, stop_after_attempt, wait_exponential
 
+from gpt_retrieval.configuration import Configuration
 from gpt_retrieval.vector.store import StoredVector
 from gpt_retrieval.vector.store import StoredVectorMetadata
 from gpt_retrieval.vector.store.factory import get_vector_store_client
@@ -80,22 +81,22 @@ def test_get_pinecone_vector_store_client(
     pinecone_index_name,
     pinecone_environment,
 ):
-    provider = 'pinecone'
-    kwargs = {
-        'api_key': pinecone_api_key,
-        'environment': pinecone_environment,
-        'dimension': pinecone_dimension,
-        'index_name': pinecone_index_name,
-        'metadata_type': StoredVectorMetadata,
-    }
-    actual = get_vector_store_client(provider, **kwargs)
+    configuration = Configuration(
+        vector_store_provider_name='pinecone',
+        pinecone_api_key=pinecone_api_key,
+        pinecone_environment=pinecone_environment,
+        pinecone_index_name=pinecone_index_name,
+        pinecone_dimension=pinecone_dimension,
+        pinecone_metadata_type=StoredVectorMetadata,
+    )
+    actual = get_vector_store_client(configuration)
     assert isinstance(actual, PineconeVectorStoreClient)
-    assert actual.metadata_type == kwargs['metadata_type']
-    assert actual.environment == kwargs['environment']
-    assert actual.dimension == kwargs['dimension']
+    assert actual.metadata_type == configuration.pinecone_metadata_type
+    assert actual.environment == configuration.pinecone_environment
+    assert actual.dimension == configuration.pinecone_dimension
     index_details = pinecone.describe_index(pinecone_index_name)
-    assert index_details.name == pinecone_index_name
-    assert index_details.dimension == kwargs['dimension']
+    assert index_details.name == configuration.pinecone_index_name
+    assert index_details.dimension == configuration.pinecone_dimension
 
 
 class FakeStoredVectorMetadata(StoredVectorMetadata):

@@ -18,18 +18,40 @@ Parameters:
     Default: ../../functions/aws/layers
   PartSize:
     Type: Number
-    Default: "8388608"
-    Description: The size of object parts for S3 multipart uploads and byte-range requests. Commonly 8 or 16 MB.
+    Default: "1048576"
+    Description: The size of object parts assigned to each worker.
+  PartProcessingChunkSize:
+    Type: Number
+    Default: "1048576"
+    Description: The size of chunks for processing object parts.
+  PartProcessingMaxConcurrentBatches:
+    Type: Number
+    Default: "1000"
+    Description: The maximum number of concurrent batches for processing object chunks.
+  EmbeddingModel:
+    Type: String
+    Default: text-embedding-ada-002
+    AllowedValues:
+      - text-embedding-ada-002
+  VectorStoreProvider:
+    Type: String
+    Default: pinecone
+    AllowedValues:
+      - pinecone
   PresignedUrlLifetime:
     Type: Number
     Default: "3600"
     Description: The number of seconds for which presigned URLs are valid.
+  PineconeEnvironment:
+    Type: String
+    Description: The Pinecone environment to use.
+  PineconeDimension:
+    Type: Number
+    Description: The dimension of the Pinecone vector store.
+  PineconeIndexName:
+    Type: String
+    Description: The name of the Pinecone index to use.
 
-Globals:
-  Function:
-    Timeout: 5
-    MemorySize: 128
-    Runtime: python3.9
 
 Resources:
   OpenAiApiKeySecret:
@@ -114,6 +136,9 @@ Resources:
     Properties:
       FunctionName: !Sub ${ProjectName}-get-upload-url
       Handler: index.handler
+      Runtime: python3.9
+      Timeout: 5
+      MemorySize: 128
       CodeUri: !Sub ${LambdasDirectory}/get_upload_url
       Layers:
         - !Ref AwsUtilsFunctionLayer
@@ -175,6 +200,9 @@ Resources:
     Properties:
       FunctionName: !Sub ${ProjectName}-handle-upload-notification
       Handler: index.handler
+      Runtime: python3.9
+      Timeout: 5
+      MemorySize: 128
       CodeUri: !Sub ${LambdasDirectory}/handle_upload_notification
       Layers:
         - !Sub arn:aws:lambda:${AWS::Region}:017000801446:layer:AWSLambdaPowertoolsPythonV2:30
@@ -207,11 +235,66 @@ Resources:
             # Note: Lambda may wait up to 20 seconds, even if a smaller batch window is specified.
             MaximumBatchingWindowInSeconds: 10
             ScalingConfig:
-              MaximumConcurrency: 50
+              MaximumConcurrency: 10
 
   UnprocessedObjectPartQueue:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Sub ${ProjectName}-unprocessed-object-part
-      # To allow time for the downstream Lambda function(s) to process each batch, set to >(lambda timeout * 6)
-      VisibilityTimeout: 300
+      # To allow time for the downstream Lambda function(s) to process each batch, set to >(lambda timeout * 6 + MaximumBatchingWindowInSeconds)
+      VisibilityTimeout: 730
+
+  HandleUnprocessedObjectPartFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-handle-unprocessed-object-part
+      Handler: index.handler
+      Runtime: python3.9
+      Timeout: 120
+      MemorySize: 512
+      CodeUri: !Sub ${LambdasDirectory}/handle_unprocessed_object_part
+      Layers:
+        - !Sub arn:aws:lambda:${AWS::Region}:017000801446:layer:AWSLambdaPowertoolsPythonV2:30
+        - !Ref AwsUtilsFunctionLayer
+        - !Ref CommonFunctionLayer
+      Environment:
+        Variables:
+          CHUNK_SIZE: !Ref PartProcessingChunkSize
+          MAX_CONCURRENT_BATCHES: !Ref PartProcessingMaxConcurrentBatches
+          EMBEDDING_MODEL_NAME: !Ref EmbeddingModel
+          VECTOR_STORE_PROVIDER_NAME: !Ref VectorStoreProvider
+          OPENAI_API_KEY_SECRET_ARN: !Ref OpenAiApiKeySecret
+          PINECONE_API_KEY_SECRET_ARN: !Ref PineconeApiKeySecret
+          PINECONE_ENVIRONMENT: !Ref PineconeEnvironment
+          PINECONE_DIMENSION: !Ref PineconeDimension
+          PINECONE_INDEX_NAME: !Ref PineconeIndexName
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - sqs:ReceiveMessage
+                - sqs:DeleteMessage
+                - sqs:GetQueueAttributes
+              Resource: !GetAtt UnprocessedObjectPartQueue.Arn
+        - S3ReadPolicy:
+            BucketName: !Ref UploadBucket
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+                - secretsmanager:DescribeSecret
+              Resource:
+                - !Ref OpenAiApiKeySecret
+                - !Ref PineconeApiKeySecret
+      Events:
+        UnprocessedObjectPartQueue:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt UnprocessedObjectPartQueue.Arn
+            BatchSize: 2
+            # Note: Lambda may wait up to 20 seconds, even if a smaller batch window is specified.
+            MaximumBatchingWindowInSeconds: 10
+            ScalingConfig:
+              MaximumConcurrency: 100
