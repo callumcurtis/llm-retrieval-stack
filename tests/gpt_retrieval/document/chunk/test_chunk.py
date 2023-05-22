@@ -1,6 +1,8 @@
 import pickle
+import itertools
 
 import pytest
+from unittest.mock import call
 
 from gpt_retrieval.document.chunk import EncodedChunk
 from gpt_retrieval.document.chunk import DecodedChunk
@@ -9,6 +11,9 @@ from gpt_retrieval.document.chunk.stream import DecodedChunkStream
 from gpt_retrieval.document.chunk.stream.transformation import DecodedChunkStreamResizerByNumTokens
 from gpt_retrieval.document.chunk.stream.transformation import DecodedChunkStreamSplitWordHealer
 from gpt_retrieval.document.chunk.stream.conversion import EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing
+from gpt_retrieval.document.chunk.stream.processing import embed_and_upsert_decoded_chunk_stream
+from gpt_retrieval.vector.store import StoredVectorMetadata
+from gpt_retrieval.vector.store import StoredVector
 
 
 def test_wrap_raw_encoded_chunk_stream_given_no_chunks():
@@ -462,3 +467,54 @@ def test_decoded_chunk_stream_complete_transformation_pipeline_given_average_fil
     actual = list(DecodedChunkStreamResizerByNumTokens(DecodedChunkStreamSplitWordHealer(decoded)))
     assert ''.join(a.text for a in actual) == original
     assert actual == expected
+
+
+def test_decoded_chunk_stream_embed_and_upsert_async_given_mocked_clients(
+    mock_embedding_client_factory,
+    mock_vector_store_client_factory,
+):
+    encoding = 'utf-8'
+    original_text = [
+        "hello ",
+        "world! This ",
+        "is a test.",
+    ]
+    original_text_stream = DecodedChunkStream(encoding).append_wrapped(original_text)
+    vector_prefix = 'vector-'
+    metadata = StoredVectorMetadata()
+    embedding_client = mock_embedding_client_factory()
+    vector_store_client = mock_vector_store_client_factory()
+    max_concurrent_batches = 2
+    batch_size = 2
+    embed_and_upsert_decoded_chunk_stream(
+        original_text_stream,
+        vector_prefix,
+        metadata,
+        embedding_client,
+        vector_store_client,
+        max_concurrent_batches,
+        batch_size,
+    )
+    embedding_client.embed_batch_async.assert_has_calls([
+        call(["hello ", "world! This "]),
+        call(["is a test."]),
+    ])
+    starts = list(itertools.accumulate(itertools.chain([0], (len(t) for t in original_text))))
+    vector_store_client.upsert_batch_async.assert_has_calls([
+        call([
+            StoredVector(
+                id=f'{vector_prefix}:{starts[0]}-{starts[1]}',
+                vector=[1.0],
+                metadata=metadata),
+            StoredVector(
+                id=f'{vector_prefix}:{starts[1]}-{starts[2]}',
+                vector=[1.0],
+                metadata=metadata),
+        ]),
+        call([
+            StoredVector(
+                id=f'{vector_prefix}:{starts[2]}-{starts[3]}',
+                vector=[1.0],
+                metadata=metadata),
+        ]),
+    ])

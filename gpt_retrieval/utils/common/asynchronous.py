@@ -26,8 +26,11 @@ class BackgroundEventLoop:
         assert not self._running
         assert not self._closed
 
+        is_loop_running = threading.Event()
+
         def run_within_background_thread():
             asyncio.set_event_loop(self._loop)
+            self._loop.call_soon(lambda: is_loop_running.set())
             # run until stop() is called
             self._loop.run_forever()
 
@@ -35,6 +38,7 @@ class BackgroundEventLoop:
             target=run_within_background_thread,
         )
         self._thread.start()
+        is_loop_running.wait()
         self._running = True
 
     def stop(self) -> None:

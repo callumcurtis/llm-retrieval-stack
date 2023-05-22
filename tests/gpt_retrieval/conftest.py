@@ -1,4 +1,8 @@
 import pytest
+from unittest.mock import create_autospec
+
+from gpt_retrieval.vector.store.provider.base import VectorStoreClient
+from gpt_retrieval.embedding.provider.base import EmbeddingClient
 
 
 UTF8_CHARS = [
@@ -34,3 +38,30 @@ def utf8_truncation(request):
 @pytest.fixture(params=(s for c in UTF8_CHARS for s in splits(c)))
 def utf8_split(request):
     return request.param
+
+
+@pytest.fixture
+def mock_embedding_client_factory():
+
+    async def embed_batch_async(texts):
+        return [[1.0]] * len(texts)
+
+    def factory():
+        m = create_autospec(EmbeddingClient)
+        m.EMBED_BATCH_SIZE = 21344
+        m.embed_batch_async.side_effect = embed_batch_async
+        return m
+    
+    return factory
+
+
+@pytest.fixture
+def mock_vector_store_client_factory():
+
+    def factory():
+        m = create_autospec(VectorStoreClient)
+        m.UPSERT_BATCH_SIZE = 16234
+        m.upsert_batch_async.return_value = None
+        return m
+    
+    return factory
