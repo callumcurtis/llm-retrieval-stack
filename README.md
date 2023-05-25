@@ -31,7 +31,7 @@ Advantages of this project:
 ## Architecture
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/callumcurtis/llm-retrieval-stack/main/docs/aws-system-architecture.png">
+  <img src="https://github.com/callumcurtis/llm-retrieval-stack/blob/main/docs/aws-system-architecture.png?raw=true">
 </div>
 
 ## Project Structure
