@@ -139,7 +139,7 @@ Resources:
       Runtime: python3.9
       Timeout: 5
       MemorySize: 128
-      CodeUri: !Sub ${LambdasDirectory}/get_upload_url
+      CodeUri: !Sub ${LambdasDirectory}/get-upload-url
       Layers:
         - !Ref AwsUtilsFunctionLayer
       Environment:
@@ -203,7 +203,7 @@ Resources:
       Runtime: python3.9
       Timeout: 5
       MemorySize: 128
-      CodeUri: !Sub ${LambdasDirectory}/handle_upload_notification
+      CodeUri: !Sub ${LambdasDirectory}/handle-upload-notification
       Layers:
         - !Sub arn:aws:lambda:${AWS::Region}:017000801446:layer:AWSLambdaPowertoolsPythonV2:30
         - !Ref AwsUtilsFunctionLayer
@@ -252,7 +252,7 @@ Resources:
       Runtime: python3.9
       Timeout: 120
       MemorySize: 512
-      CodeUri: !Sub ${LambdasDirectory}/handle_unprocessed_object_part
+      CodeUri: !Sub ${LambdasDirectory}/handle-unprocessed-object-part
       Layers:
         - !Sub arn:aws:lambda:${AWS::Region}:017000801446:layer:AWSLambdaPowertoolsPythonV2:30
         - !Ref AwsUtilsFunctionLayer
