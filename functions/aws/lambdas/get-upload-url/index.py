@@ -1,8 +1,8 @@
 import os
 
-from gpt_retrieval.api.model import GetUploadUrlResponse
-from gpt_retrieval.utils.aws.s3 import S3ObjectId
-from gpt_retrieval.utils.aws.s3 import S3MethodPresigner
+from llm_retrieval.api.model import GetUploadUrlResponse
+from llm_retrieval.utils.aws.s3 import S3ObjectId
+from llm_retrieval.utils.aws.s3 import S3MethodPresigner
 
 
 UPLOAD_BUCKET_NAME = os.environ['UPLOAD_BUCKET_NAME']

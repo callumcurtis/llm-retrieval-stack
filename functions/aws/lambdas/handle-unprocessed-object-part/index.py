@@ -3,18 +3,18 @@ import os
 
 from aws_lambda_powertools import Logger
 
-from gpt_retrieval.utils.aws.s3 import S3ObjectPartId
-from gpt_retrieval.utils.aws.s3 import S3ObjectPartReader
-from gpt_retrieval.utils.aws.secrets import SecretsReader
-from gpt_retrieval.configuration import Configuration
-from gpt_retrieval.document.chunk.stream import EncodedChunkStream
-from gpt_retrieval.document.chunk.stream.conversion import EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing
-from gpt_retrieval.document.chunk.stream.transformation import DecodedChunkStreamSplitWordHealer
-from gpt_retrieval.document.chunk.stream.transformation import DecodedChunkStreamResizerByNumTokens
-from gpt_retrieval.document.chunk.stream.processing import embed_and_upsert_decoded_chunk_stream
-from gpt_retrieval.vector.store import StoredVectorMetadata
-from gpt_retrieval.embedding.factory import get_embedding_client
-from gpt_retrieval.vector.store.factory import get_vector_store_client
+from llm_retrieval.utils.aws.s3 import S3ObjectPartId
+from llm_retrieval.utils.aws.s3 import S3ObjectPartReader
+from llm_retrieval.utils.aws.secrets import SecretsReader
+from llm_retrieval.configuration import Configuration
+from llm_retrieval.document.chunk.stream import EncodedChunkStream
+from llm_retrieval.document.chunk.stream.conversion import EncodedToDecodedChunkStreamConverterWithSplitCharacterHealing
+from llm_retrieval.document.chunk.stream.transformation import DecodedChunkStreamSplitWordHealer
+from llm_retrieval.document.chunk.stream.transformation import DecodedChunkStreamResizerByNumTokens
+from llm_retrieval.document.chunk.stream.processing import embed_and_upsert_decoded_chunk_stream
+from llm_retrieval.vector.store import StoredVectorMetadata
+from llm_retrieval.embedding.factory import get_embedding_client
+from llm_retrieval.vector.store.factory import get_vector_store_client
 
 
 CHUNK_SIZE = int(os.environ['CHUNK_SIZE'])
