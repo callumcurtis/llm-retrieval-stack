@@ -2,9 +2,9 @@
 
 ## Description
 
-This project aims to develop a cloud-based system to embed and store arbitrary user data, facilitating semantic search and retrieval of personal or organizational knowledge for input to GPT-4 and other language models.
+Cloud-based system to embed and store arbitrary user data, facilitating semantic search and retrieval of personal or organizational knowledge for input to GPT-4 and other language models.
 
-Systems like this one are useful for improving the relevance and quality of large language model outputs, as they supply the model with additional context from a knowledge base of the user's choosing - allowing the model's knowledge to be supplemented on the fly. For more information, see the [Retrieval-Augmented Generation (RAG) paper](https://arxiv.org/abs/2005.11401).
+Systems like this are useful for improving the relevance and quality of large language model outputs, as they supply the model with additional context from a knowledge base of the user's choosing - allowing the model's knowledge to be supplemented on the fly. For more information, see the [Retrieval-Augmented Generation (RAG) paper](https://arxiv.org/abs/2005.11401).
 
 ## Advantages over Existing Solutions
 
@@ -62,17 +62,3 @@ To get started with this project, follow the steps below:
 
 1. Clone the repository
 2. Run [sam deploy --guided](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-deploy.html) in [`deploy/aws`](deploy/aws) and follow the instructions
-
-## Milestone Progress
-
-### :white_check_mark: Milestone 1: Scalable Processing and Storage for Text Embeddings
-
-Goal: Develop a cloud-based system to embed and store arbitrary user data, facilitating semantic search and retrieval of personal or organizational knowledge for input to GPT-4 and other language models.
-
-### :white_large_square: Milestone 2: Semantic Search and Prompt Augmentation
-
-Goal: Develop a cloud-based system to perform semantic search and prompt augmentation for large language models (LLMs) using the system developed in Milestone 1.
-
-### :white_large_square: Milestone 3: User Interface
-
-Goal: Develop a demo web application to showcase the system developed in previous milestones.
